@@ -1,0 +1,2656 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Sheet Overlay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@400;500;600&display=swap">
+<style>
+/* Layout: drafting-desk canvas on the left, title-block style sheet rail on the right, thin command bar on top. */
+:root {
+  --desk: #c7ccd1;
+  --chrome: #f3f4f5;
+  --panel: #fbfbfc;
+  --ink: #17212b;
+  --muted: #5d6874;
+  --line: #d6dbe0;
+  --hover: #e9edf0;
+  --accent: #0a6c66;
+  --accent-ink: #ffffff;
+  --accent-soft: #d8ecea;
+  --good: #2c7a3a;
+  --warn: #a8670b;
+  --bad: #b3332a;
+  --redline: #d91a1a;
+  --shadow: 0 1px 2px rgba(20, 30, 40, .12), 0 6px 18px rgba(20, 30, 40, .10);
+  --f-ui: "IBM Plex Sans Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --f-display: "Archivo Narrow", "Arial Narrow", "IBM Plex Sans Condensed", sans-serif;
+  --r: 4px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --desk: #0f1316; --chrome: #171c21; --panel: #1c2228; --ink: #e4e9ee; --muted: #94a1ad; --line: #2d3741; --hover: #252d35;
+    --accent: #41b8ad; --accent-ink: #0b1615; --accent-soft: #173734; --good: #5cbf6c; --warn: #e0a447; --bad: #ef6b60; --redline: #ff4d4d;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 24px rgba(0, 0, 0, .4); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --desk: #0f1316; --chrome: #171c21; --panel: #1c2228; --ink: #e4e9ee; --muted: #94a1ad; --line: #2d3741; --hover: #252d35;
+  --accent: #41b8ad; --accent-ink: #0b1615; --accent-soft: #173734; --good: #5cbf6c; --warn: #e0a447; --bad: #ef6b60; --redline: #ff4d4d;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 24px rgba(0, 0, 0, .4); color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--chrome); color: var(--ink); font: 14px/1.4 var(--f-ui); overflow: hidden; }
+button, input, select { font: inherit; color: inherit; }
+.app { height: 100%; display: grid; grid-template-rows: auto 1fr auto; min-width: 0; }
+
+/* ---- command bar ---- */
+.bar { display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-bottom: 1px solid var(--line); background: var(--chrome); min-width: 0; flex-wrap: wrap; }
+.brand { font: 700 15px/1 var(--f-display); letter-spacing: .06em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.brand svg { width: 20px; height: 20px; color: var(--accent); }
+.sheetcell { display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); min-width: 0; max-width: 460px; overflow: hidden; }
+.sheetcell .no { white-space: nowrap; font: 700 18px/1 var(--f-display); padding: 6px 10px; border-right: 1px solid var(--line); letter-spacing: .02em; display: flex; align-items: center; }
+.sheetcell .nm { padding: 4px 10px; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+.sheetcell .nm small { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.sheetcell .nm span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+.grp { display: flex; align-items: center; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); }
+.spacer { flex: 1; }
+.btn { border: 1px solid var(--line); background: var(--panel); border-radius: var(--r); padding: 5px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; line-height: 1.2; }
+.btn:hover { background: var(--hover); }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.07); }
+.ib { border: 0; background: transparent; border-radius: 3px; width: 30px; height: 28px; display: inline-grid; place-items: center; cursor: pointer; color: var(--ink); }
+.ib:hover { background: var(--hover); }
+.ib[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+.ib svg, .btn svg { width: 17px; height: 17px; }
+.zoomv { font: 500 12px var(--f-mono); min-width: 52px; text-align: center; font-variant-numeric: tabular-nums; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ---- main ---- */
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; min-height: 0; }
+.stage { position: relative; background: var(--desk); overflow: hidden; min-width: 0; touch-action: none; }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.stage svg.ovl { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.stage svg.ovl .hit { pointer-events: stroke; cursor: pointer; }
+.stage svg.ovl .hitfill { pointer-events: all; cursor: pointer; }
+.stage[data-mode="pan"] { cursor: grab; }
+.stage[data-mode="move"] { cursor: move; }
+.stage.dragging { cursor: grabbing !important; }
+.stage[data-mode="crop"], .stage[data-mode="cloud"], .stage[data-mode="arrow"], .stage[data-mode="text"], .stage[data-mode="twopt"] { cursor: crosshair; }
+.banner { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); border-radius: 6px; padding: 8px 10px 8px 14px; display: flex; gap: 12px; align-items: center; max-width: calc(100% - 32px); z-index: 3; }
+.banner b { font-weight: 600; }
+.banner .step { font: 500 11px var(--f-mono); color: var(--accent); letter-spacing: .04em; }
+.textedit { position: absolute; z-index: 4; border: 1.5px solid var(--redline); background: rgba(255, 255, 255, .95); color: #b01010; font: 13px/1.25 "Arial Narrow", var(--f-ui); padding: 3px; resize: none; }
+.busy { position: absolute; right: 12px; bottom: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px 4px 8px; font-size: 12px; color: var(--muted); display: flex; gap: 8px; align-items: center; box-shadow: var(--shadow); z-index: 2; }
+.spin { width: 12px; height: 12px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: sp .8s linear infinite; }
+@keyframes sp { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation-duration: 3s; } }
+
+/* empty state */
+.empty { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; }
+.drop { max-width: 560px; width: 100%; background: var(--panel); border: 1.5px dashed var(--muted); border-radius: 8px; padding: 28px 30px; box-shadow: var(--shadow); }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop h1 { font: 700 24px/1.1 var(--f-display); letter-spacing: .04em; text-transform: uppercase; margin: 0 0 6px; text-wrap: balance; }
+.drop p { margin: 0 0 14px; color: var(--muted); max-width: 60ch; }
+.drop ol { margin: 0 0 18px; padding-left: 20px; display: grid; gap: 4px; }
+.drop .fine { font-size: 12px; color: var(--muted); margin: 14px 0 0; }
+
+/* ---- sidebar ---- */
+.side { border-left: 1px solid var(--line); background: var(--panel); display: grid; grid-template-rows: auto auto minmax(0, 1fr); min-height: 0; min-width: 0; }
+.sec-h { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.sec-h .ct { font: 500 11px var(--f-mono); letter-spacing: 0; }
+.ovs { max-height: 52vh; overflow: auto; border-bottom: 1px solid var(--line); }
+.ovs:empty::after { content: "Tick sheets below to overlay them on the current sheet. Each one is aligned on its grid lines automatically."; display: block; padding: 10px 12px 14px; color: var(--muted); font-size: 13px; }
+.card { border-bottom: 1px solid var(--line); padding: 8px 10px 8px 12px; display: grid; gap: 6px; position: relative; }
+.card.sel { background: var(--hover); }
+.card.sel::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--ovc, var(--accent)); }
+.card .row1 { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.sw { width: 20px; height: 20px; border-radius: 3px; border: 1px solid rgba(0, 0, 0, .25); position: relative; overflow: hidden; flex: none; cursor: pointer; }
+.sw input { position: absolute; inset: -6px; width: 40px; height: 40px; opacity: 0; cursor: pointer; }
+.card .t { min-width: 0; flex: 1; cursor: pointer; }
+.card .t b { font: 600 14px var(--f-mono); }
+.card .t span { display: block; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chip { font: 500 11px/1 var(--f-mono); padding: 4px 6px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; display: inline-flex; gap: 5px; align-items: center; background: transparent; cursor: pointer; }
+.chip i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; display: inline-block; }
+.chip.high { color: var(--good); } .chip.medium { color: var(--warn); } .chip.low, .chip.none { color: var(--bad); } .chip.manual { color: var(--accent); } .chip.pending { color: var(--muted); }
+.op { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+.op input[type=range] { flex: 1; accent-color: var(--ovc, var(--accent)); }
+.op output { font: 12px var(--f-mono); width: 34px; text-align: right; font-variant-numeric: tabular-nums; }
+.adj { display: grid; gap: 8px; padding-top: 2px; }
+.fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.fields label { min-width: 0; display: grid; gap: 2px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.fields input { width: 100%; min-width: 0; border: 1px solid var(--line); background: var(--chrome); border-radius: 3px; padding: 3px 5px; font: 12px var(--f-mono); font-variant-numeric: tabular-nums; }
+.nudge { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.nudge > div { min-width: 0; }
+.pad { display: grid; grid-template-columns: repeat(3, 26px); grid-template-rows: repeat(2, 24px); gap: 2px; }
+.pad button { border: 1px solid var(--line); background: var(--chrome); border-radius: 3px; cursor: pointer; padding: 0; display: grid; place-items: center; }
+.pad button:hover { background: var(--hover); }
+.pad svg { width: 12px; height: 12px; }
+.mini { display: flex; gap: 4px; flex-wrap: wrap; }
+.mini .btn { padding: 3px 7px; font-size: 12px; }
+.mini .btn svg { width: 14px; height: 14px; }
+.notes { margin: 0; padding: 6px 8px 6px 22px; font-size: 12px; color: var(--muted); background: var(--chrome); border-radius: 3px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+.seg button { border: 0; background: var(--chrome); padding: 2px 6px; font: 11px var(--f-mono); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.sheets-h { display: grid; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+.sheets-h .sec-h { padding: 0; border: 0; }
+.search { width: 100%; border: 1px solid var(--line); background: var(--chrome); border-radius: var(--r); padding: 5px 8px; }
+.list { overflow: auto; min-height: 0; }
+.disc { position: sticky; top: 0; background: var(--panel); padding: 6px 12px 3px; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); z-index: 1; }
+.sh { display: grid; grid-template-columns: 22px 64px minmax(0, 1fr); align-items: center; gap: 6px; padding: 4px 12px 4px 8px; cursor: pointer; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+.sh:hover { background: var(--hover); }
+.sh.cur { background: var(--accent-soft); }
+.sh .n { font: 500 13px var(--f-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sh .nm { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sh .nm.dim { color: var(--muted); font-style: italic; }
+.sh input[type=checkbox] { width: 15px; height: 15px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.sh .tag { font: 10px var(--f-mono); color: var(--accent); margin-left: 6px; }
+.sh .edit { width: 100%; border: 1px solid var(--accent); border-radius: 3px; padding: 1px 4px; background: var(--chrome); }
+.mk { display: flex; gap: 6px; align-items: center; padding: 4px 12px; font-size: 12px; border-bottom: 1px solid var(--line); }
+.mk span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---- status ---- */
+.status { display: flex; gap: 16px; align-items: center; padding: 4px 12px; border-top: 1px solid var(--line); font: 12px var(--f-mono); color: var(--muted); background: var(--chrome); min-width: 0; overflow: hidden; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.status .msg { font-family: var(--f-ui); overflow: hidden; text-overflow: ellipsis; }
+.toast { position: fixed; left: 50%; bottom: 40px; transform: translateX(-50%); background: var(--ink); color: var(--panel); padding: 8px 14px; border-radius: 6px; box-shadow: var(--shadow); z-index: 10; max-width: calc(100% - 32px); }
+.kbd { font: 11px var(--f-mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 3px; padding: 0 4px; }
+
+/* ---- narrow screens: canvas fills the screen, sheet list slides in as a drawer ---- */
+.sideBtn { display: none; }
+.scrim { display: none; }
+@media (max-width: 820px) {
+  .bar { gap: 6px; padding: 6px 8px; }
+  .brand span.bt, .bar .lbl, #zoomGrp { display: none; }
+  .sheetcell .nm small { display: none; }
+  .sheetcell { max-width: 100%; flex: 1 1 160px; }
+  .sheetcell .no { font-size: 16px; }
+  .sideBtn { display: inline-flex; }
+  .main { grid-template-columns: minmax(0, 1fr); position: relative; overflow: hidden; }
+  .side { position: absolute; top: 0; right: 0; bottom: 0; width: min(380px, 92vw); z-index: 6; border-left: 1px solid var(--line); box-shadow: var(--shadow); transform: translateX(105%); transition: transform .2s ease; }
+  .app.side-open .side { transform: none; }
+  .app.side-open .scrim { display: block; position: absolute; inset: 0; background: rgba(10, 16, 22, .35); z-index: 5; }
+  .ovs { max-height: 45vh; }
+  .status #stPos, .status #stScale { display: none; }
+  .banner { flex-wrap: wrap; top: 8px; }
+}
+@media (prefers-reduced-motion: reduce) { .side { transition: none; } }
+}
+
+/* export dialog */
+.modal { position: fixed; inset: 0; background: rgba(10, 16, 22, .45); display: grid; place-items: center; z-index: 20; padding: 16px; }
+.dlg { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); width: min(560px, 100%); max-height: calc(100vh - 32px); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+.dlg h2 { margin: 0; padding: 14px 18px 10px; font: 700 18px/1.1 var(--f-display); letter-spacing: .05em; text-transform: uppercase; border-bottom: 1px solid var(--line); }
+.dlg .body { padding: 12px 18px; overflow: auto; display: grid; gap: 14px; min-height: 0; }
+.dlg fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.dlg legend { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-bottom: 4px; padding: 0; }
+.dlg .opt { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 8px; border: 1px solid var(--line); border-radius: var(--r); cursor: pointer; }
+.dlg .opt:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.dlg .opt input { margin: 0; accent-color: var(--accent); }
+.dlg .opt small { color: var(--muted); display: block; font-size: 12px; }
+.dlg .opt .ct { font: 12px var(--f-mono); color: var(--muted); }
+.picklist { border: 1px solid var(--line); border-radius: var(--r); max-height: 240px; overflow: auto; }
+.picklist label { display: grid; grid-template-columns: 18px 64px minmax(0, 1fr); gap: 6px; align-items: center; padding: 3px 8px; font-size: 13px; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); cursor: pointer; }
+.picklist label b { font: 500 12px var(--f-mono); }
+.picklist label span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.picklist input { margin: 0; accent-color: var(--accent); }
+.dlg .foot { display: flex; gap: 8px; align-items: center; padding: 10px 18px 14px; border-top: 1px solid var(--line); }
+.dlg .foot .msg { flex: 1; font-size: 12px; color: var(--muted); min-width: 0; }
+</style>
+
+<div class="app" id="app">
+  <header class="bar">
+    <div class="brand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="13" height="10" rx="1"/><rect x="8" y="9" width="13" height="10" rx="1" stroke-dasharray="3 2"/></svg><span class="bt">Sheet Overlay</span></div>
+    <button class="btn" id="openBtn" title="Open a PDF plan set (Ctrl+O)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h6l2 2h10v10H3z"/></svg><span class="lbl">Open set</span></button>
+    <input type="file" id="fileIn" accept="application/pdf,.pdf" hidden>
+    <div class="sheetcell" id="sheetCell" hidden>
+      <div class="no" id="curNo">-</div>
+      <div class="nm"><small>Current sheet</small><span id="curName">-</span></div>
+    </div>
+    <div class="grp" id="navGrp" hidden>
+      <button class="ib" id="prevBtn" title="Previous sheet (Page Up)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <button class="ib" id="nextBtn" title="Next sheet (Page Down)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></button>
+    </div>
+    <div class="grp" id="toolGrp" hidden role="toolbar" aria-label="Tools">
+      <button class="ib" data-tool="pan" aria-pressed="true" title="Pan and select (V)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 13V5.5a1.5 1.5 0 013 0V12m0-1V4.5a1.5 1.5 0 013 0V11m0-.5V6a1.5 1.5 0 013 0v8a7 7 0 01-7 7h-1a6 6 0 01-5-2.7L3.6 14a1.5 1.5 0 012.4-1.8L8 15"/></svg></button>
+      <button class="ib" data-tool="move" title="Move the selected overlay or a markup by dragging (M). Shift+drag also works in pan mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg></button>
+      <button class="ib" data-tool="crop" title="Crop selected overlay (C)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2v16h16M2 6h16v16"/></svg></button>
+      <button class="ib" data-tool="cloud" title="Revision cloud (K)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 9a2.5 2.5 0 014-2 2.5 2.5 0 014.5-1 2.5 2.5 0 014.5 1.5 2.5 2.5 0 011 4.5 2.5 2.5 0 01-1.5 4 2.5 2.5 0 01-4 2 2.5 2.5 0 01-4.5 0 2.5 2.5 0 01-4-2A2.5 2.5 0 013.5 13 2.5 2.5 0 015 9z"/></svg></button>
+      <button class="ib" data-tool="arrow" title="Arrow (A)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20L19 5M11 5h8v8"/></svg></button>
+      <button class="ib" data-tool="text" title="Text box (T)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="1"/><path d="M8 9h8M12 9v7"/></svg></button>
+    </div>
+    <div class="grp" id="zoomGrp" hidden>
+      <button class="ib" id="zoomOut" title="Zoom out (-)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg></button>
+      <span class="zoomv" id="zoomV">100%</span>
+      <button class="ib" id="zoomIn" title="Zoom in (+)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button class="ib" id="zoomFit" title="Fit sheet (F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn sideBtn" id="sideBtn" aria-controls="side" aria-expanded="false" title="Sheets and overlays"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Sheets</button>
+    <button class="btn primary" id="exportBtn" disabled title="Export this sheet with overlays as Bluebeam markups"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v11m-5-5l5 5 5-5M5 20h14"/></svg><span class="lbl">Export PDF</span></button>
+  </header>
+
+  <div class="main">
+    <section class="stage" id="stage" data-mode="pan" tabindex="0" aria-label="Drawing viewer">
+      <canvas id="cv"></canvas>
+      <svg class="ovl" id="svg" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="banner" id="banner" hidden></div>
+      <div class="busy" id="busy" hidden><div class="spin"></div><span id="busyMsg">Working</span></div>
+      <div class="empty" id="empty">
+        <div class="drop" id="drop">
+          <h1>Overlay sheets from a plan set</h1>
+          <p>Open a PDF drawing set to compare disciplines. Sheets line up on their column and row grids, so an HVAC plan lands on the architectural roof plan without manual fiddling.</p>
+          <ol>
+            <li>Open or drop a plan set PDF. The sheet list builds from the title blocks and sheet index.</li>
+            <li>Click a sheet to make it the base, then tick other sheets to overlay them.</li>
+            <li>Adjust color, transparency, crop and position, then export a PDF for Bluebeam.</li>
+          </ol>
+          <button class="btn primary" id="openBtn2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h6l2 2h10v10H3z"/></svg>Choose PDF</button>
+          <p class="fine">Files are read in this browser tab and never uploaded.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="scrim" id="scrim"></div>
+    <aside class="side" id="side">
+      <div>
+        <div class="sec-h"><span id="ovTitle">Overlays</span><span class="spacer"></span><span class="ct" id="ovCount"></span></div>
+        <div class="ovs" id="ovs"></div>
+        <div id="mkList"></div>
+      </div>
+      <div class="sheets-h">
+        <div class="sec-h"><span>Sheets</span><span class="spacer"></span><span class="ct" id="shCount"></span></div>
+        <input class="search" id="search" type="search" placeholder="Filter by number or name" aria-label="Filter sheets">
+      </div>
+      <div class="list" id="list"></div>
+    </aside>
+  </div>
+
+  <footer class="status">
+    <span id="stPos">x -, y -</span>
+    <span id="stScale"></span>
+    <span class="msg" id="stMsg">Open a plan set to begin.</span>
+  </footer>
+</div>
+<div class="toast" id="toast" hidden></div>
+<div class="modal" id="expModal" hidden role="dialog" aria-modal="true" aria-labelledby="expTitle">
+  <form class="dlg" id="expForm">
+    <h2 id="expTitle">Export PDF</h2>
+    <div class="body">
+      <fieldset>
+        <legend>Sheets</legend>
+        <label class="opt"><input type="radio" name="scope" value="current" id="scCur"><span>Current sheet <small id="scCurNm"></small></span><span class="ct" id="scCurCt">1</span></label>
+        <label class="opt"><input type="radio" name="scope" value="marked" id="scMarked"><span>Sheets with overlays or markups <small>Every sheet you have worked on</small></span><span class="ct" id="scMarkedCt">0</span></label>
+        <label class="opt"><input type="radio" name="scope" value="all" id="scAll"><span>Full set <small>All sheets; sheets you did not touch are copied unchanged</small></span><span class="ct" id="scAllCt">0</span></label>
+        <label class="opt"><input type="radio" name="scope" value="pick" id="scPick"><span>Choose sheets</span><span class="ct" id="scPickCt">0</span></label>
+        <div id="pickBox" hidden style="display:grid;gap:6px">
+          <div style="display:flex;gap:6px"><input class="search" id="pickFilter" type="search" placeholder="Filter sheets" aria-label="Filter sheets"><button type="button" class="btn" id="pickAll">All</button><button type="button" class="btn" id="pickNone">None</button></div>
+          <div class="picklist" id="pickList"></div>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Files</legend>
+        <label class="opt"><input type="radio" name="files" value="one" id="fOne" checked><span>One PDF <small>Sheets in set order, with a bookmark per sheet</small></span><span></span></label>
+        <label class="opt"><input type="radio" name="files" value="separate" id="fSep"><span>Separate PDF per sheet <small>Downloaded together as one .zip file</small></span><span></span></label>
+      </fieldset>
+    </div>
+    <div class="foot"><span class="msg" id="expMsg"></span><button type="button" class="btn" id="expCancel">Cancel</button><button type="submit" class="btn primary" id="expGo">Export</button></div>
+  </form>
+</div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script>
+// Vector + text extraction from a PDF.js page into display (top-left, points) coordinates.
+// Works in browser (window.OverlayEngine) and Node (module.exports).
+(function (root) {
+  const E = root.OverlayEngine || (root.OverlayEngine = {});
+
+  function mul(m, n) { // m then n  (PDF.js Util.transform order: n applied first? we use: result = m * n like pdf.js)
+    return [
+      m[0] * n[0] + m[2] * n[1], m[1] * n[0] + m[3] * n[1],
+      m[0] * n[2] + m[2] * n[3], m[1] * n[2] + m[3] * n[3],
+      m[0] * n[4] + m[2] * n[5] + m[4], m[1] * n[4] + m[3] * n[5] + m[5]];
+  }
+  function ap(m, x, y) { return [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]]; }
+  E.mul = mul; E.ap = ap;
+  E.inv = function (m) {
+    const d = m[0] * m[3] - m[1] * m[2];
+    return [m[3] / d, -m[1] / d, -m[2] / d, m[0] / d, (m[2] * m[5] - m[3] * m[4]) / d, (m[1] * m[4] - m[0] * m[5]) / d];
+  };
+
+  // Extract: { W, H, paths:[{sub:[[x,y,...]], closed:[bool], curves:int, stroke, fill, dash, lw, ocg}], segs: Float64Array-ish, text:[...] }
+  E.extractPage = async function (pdfjsLib, page, opts) {
+    opts = opts || {};
+    const OPS = pdfjsLib.OPS;
+    const vp = page.getViewport({ scale: 1 });
+    const VT = vp.transform; // native -> display
+    const opList = await page.getOperatorList({ intent: 'display', annotationMode: (pdfjsLib.AnnotationMode ? pdfjsLib.AnnotationMode.DISABLE : 0) });
+    const ocNames = {};
+    try {
+      const cfg = opts.ocConfig;
+      const groups = cfg && cfg.getGroups ? cfg.getGroups() : null;
+      if (groups) for (const id in groups) ocNames[id] = groups[id].name;
+    } catch (e) { /* ignore */ }
+
+    const fn = opList.fnArray, args = opList.argsArray;
+    let ctm = VT.slice();
+    const stack = [];
+    let dash = false, lw = 1;
+    const ocStack = [];
+    const formStack = [];
+    let pending = null; // path built by constructPath awaiting paint op
+    const paths = [];
+    // line segments: x1,y1,x2,y2, flags(bit0 dashed, bit1 stroke), pathIndex
+    const segs = [];
+    const segMeta = []; // [pathIdx, ocgIdx]
+    const ocgList = []; const ocgIdx = {};
+    function curOcg() {
+      for (let i = ocStack.length - 1; i >= 0; i--) if (ocStack[i]) return ocStack[i];
+      return null;
+    }
+    function ocgId(name) {
+      if (!name) return -1;
+      if (!(name in ocgIdx)) { ocgIdx[name] = ocgList.length; ocgList.push(name); }
+      return ocgIdx[name];
+    }
+    function lineScale() { return Math.sqrt(Math.abs(ctm[0] * ctm[3] - ctm[1] * ctm[2])); }
+
+    for (let i = 0; i < fn.length; i++) {
+      const f = fn[i], a = args[i];
+      switch (f) {
+        case OPS.save: stack.push([ctm, dash, lw]); break;
+        case OPS.restore: if (stack.length) { const s = stack.pop(); ctm = s[0]; dash = s[1]; lw = s[2]; } break;
+        case OPS.transform: ctm = mul(ctm, a); break;
+        case OPS.setDash: dash = !!(a[0] && a[0].length && a[0].some(v => v > 0)); break;
+        case OPS.setLineWidth: lw = a[0]; break;
+        case OPS.setGState: {
+          const g = a[0]; if (g) for (const [k, v] of g) { if (k === 'LW') lw = v; if (k === 'D') dash = !!(v && v[0] && v[0].length); }
+          break;
+        }
+        case OPS.paintFormXObjectBegin: {
+          formStack.push([ctm, dash, lw]);
+          if (a[0]) ctm = mul(ctm, a[0]);
+          break;
+        }
+        case OPS.paintFormXObjectEnd: if (formStack.length) { const s = formStack.pop(); ctm = s[0]; dash = s[1]; lw = s[2]; } break;
+        case OPS.beginMarkedContentProps: {
+          let name = null;
+          const p = a[1];
+          if (a[0] === 'OC' && p) {
+            if (p.type === 'OCG' && p.id) name = ocNames[p.id] || p.id;
+            else if (p.type === 'OCMD' && p.ids) name = p.ids.map(id => ocNames[id] || id).join('|');
+          }
+          ocStack.push(name);
+          break;
+        }
+        case OPS.beginMarkedContent: ocStack.push(null); break;
+        case OPS.endMarkedContent: ocStack.pop(); break;
+        case OPS.constructPath: {
+          const ops = a[0], co = a[1];
+          let k = 0;
+          const subs = []; const closed = []; let cur = null; let curves = 0; let ncurv = []; let lines = [];
+          let sx = 0, sy = 0, lx = 0, ly = 0; // in native-ish user coords (pre ctm)
+          const T = ctm;
+          const push = (x, y) => { const p = ap(T, x, y); cur.push(p[0], p[1]); };
+          for (let j = 0; j < ops.length; j++) {
+            const op = ops[j];
+            if (op === OPS.moveTo) {
+              lx = sx = co[k++]; ly = sy = co[k++];
+              cur = []; subs.push(cur); closed.push(false); ncurv.push(0); push(lx, ly);
+            } else if (op === OPS.lineTo) {
+              const x = co[k++], y = co[k++];
+              if (!cur) { cur = []; subs.push(cur); closed.push(false); ncurv.push(0); push(lx, ly); }
+              lines.push(ap(T, lx, ly), ap(T, x, y));
+              push(x, y); lx = x; ly = y;
+            } else if (op === OPS.curveTo || op === OPS.curveTo2 || op === OPS.curveTo3) {
+              let x1, y1, x2, y2, x3, y3;
+              if (op === OPS.curveTo) { x1 = co[k++]; y1 = co[k++]; x2 = co[k++]; y2 = co[k++]; x3 = co[k++]; y3 = co[k++]; }
+              else if (op === OPS.curveTo2) { x1 = lx; y1 = ly; x2 = co[k++]; y2 = co[k++]; x3 = co[k++]; y3 = co[k++]; }
+              else { x1 = co[k++]; y1 = co[k++]; x3 = co[k++]; y3 = co[k++]; x2 = x3; y2 = y3; }
+              if (!cur) { cur = []; subs.push(cur); closed.push(false); ncurv.push(0); push(lx, ly); }
+              // sample t = .25 .5 .75 1
+              for (const t of [0.25, 0.5, 0.75, 1]) {
+                const u = 1 - t;
+                const x = u * u * u * lx + 3 * u * u * t * x1 + 3 * u * t * t * x2 + t * t * t * x3;
+                const y = u * u * u * ly + 3 * u * u * t * y1 + 3 * u * t * t * y2 + t * t * t * y3;
+                push(x, y);
+              }
+              ncurv[ncurv.length - 1]++; curves++;
+              lx = x3; ly = y3;
+            } else if (op === OPS.closePath) {
+              if (cur) { closed[closed.length - 1] = true; if (lx !== sx || ly !== sy) lines.push(ap(T, lx, ly), ap(T, sx, sy)); }
+              lx = sx; ly = sy; cur = null;
+            } else if (op === OPS.rectangle) {
+              const x = co[k++], y = co[k++], w = co[k++], h = co[k++];
+              cur = []; subs.push(cur); closed.push(true); ncurv.push(0);
+              const pts = [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+              for (const p of pts) push(p[0], p[1]);
+              for (let q = 0; q < 4; q++) lines.push(ap(T, pts[q][0], pts[q][1]), ap(T, pts[(q + 1) % 4][0], pts[(q + 1) % 4][1]));
+              lx = sx = x; ly = sy = y; cur = null;
+            }
+          }
+          pending = { subs, closed, ncurv, lines, dash, lw: lw * lineScale(), ocg: curOcg() };
+          break;
+        }
+        case OPS.stroke: case OPS.closeStroke: case OPS.fill: case OPS.eoFill:
+        case OPS.fillStroke: case OPS.eoFillStroke: case OPS.closeFillStroke: case OPS.closeEOFillStroke:
+        case OPS.endPath: {
+          if (!pending) break;
+          const stroke = (f === OPS.stroke || f === OPS.closeStroke || f === OPS.fillStroke || f === OPS.eoFillStroke || f === OPS.closeFillStroke || f === OPS.closeEOFillStroke);
+          const fill = (f === OPS.fill || f === OPS.eoFill || f === OPS.fillStroke || f === OPS.eoFillStroke || f === OPS.closeFillStroke || f === OPS.closeEOFillStroke);
+          if (stroke || fill) {
+            if (f === OPS.closeStroke || f === OPS.closeFillStroke || f === OPS.closeEOFillStroke) pending.closed = pending.closed.map(() => true);
+            const pi = paths.length;
+            const oi = ocgId(pending.ocg);
+            paths.push({ subs: pending.subs, closed: pending.closed, ncurv: pending.ncurv, stroke, fill, dash: pending.dash, lw: pending.lw, ocg: oi });
+            // filled meshes of tiny triangles/quads (flattened thick lines, rings) add nothing to line tracing
+            const mesh = fill && pending.subs.length && pending.subs.every(sb => { if (sb.length > 8) return false; let a = 1e9, b = 1e9, c = -1e9, d = -1e9; for (let k = 0; k < sb.length; k += 2) { a = Math.min(a, sb[k]); c = Math.max(c, sb[k]); b = Math.min(b, sb[k + 1]); d = Math.max(d, sb[k + 1]); } return c - a < 30 && d - b < 30; });
+            if (stroke && !mesh) {
+              const L = pending.lines;
+              for (let q = 0; q < L.length; q += 2) {
+                segs.push(L[q][0], L[q][1], L[q + 1][0], L[q + 1][1]);
+                segMeta.push(pi, oi, pending.dash ? 1 : 0);
+              }
+            }
+          }
+          pending = null;
+          break;
+        }
+      }
+    }
+
+    // text
+    const text = [];
+    try {
+      const tc = await page.getTextContent({ disableCombineTextItems: false });
+      for (const it of tc.items) {
+        if (!it.str || !it.str.trim()) continue;
+        const m = mul(VT, it.transform);
+        // text direction vector and height
+        const fs = Math.hypot(m[2], m[3]) || Math.hypot(m[0], m[1]);
+        const dirx = m[0], diry = m[1]; const dl = Math.hypot(dirx, diry) || 1;
+        const w = it.width; // in text space units scaled? pdf.js width is in page units (unscaled by viewport)
+        const ux = dirx / dl, uy = diry / dl;
+        const hn = Math.hypot(m[2], m[3]) || 1;
+        const upx = m[2] / hn, upy = m[3] / hn;
+        const h = it.height || fs;
+        const cx = m[4] + ux * w / 2 + upx * h * 0.35;
+        const cy = m[5] + uy * w / 2 + upy * h * 0.35;
+        text.push({ s: it.str, x: m[4], y: m[5], cx, cy, w, h, ux, uy, font: it.fontName });
+      }
+    } catch (e) { /* ignore */ }
+
+    return { W: vp.width, H: vp.height, viewTransform: VT, rotate: page.rotate, view: page.view, paths, segs, segMeta, ocgList, text };
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = E;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// Grid bubble detection, grouping, labelling and grid-line tracing.
+(function (root) {
+  const E = root.OverlayEngine || (root.OverlayEngine = {});
+
+  function median(a) { if (!a.length) return NaN; const b = a.slice().sort((x, y) => x - y); const m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; }
+  E.median = median;
+
+  // ---------- circles ----------
+  E.findCircles = function (X) {
+    const out = [];
+    for (const p of X.paths) {
+      for (let i = 0; i < p.subs.length; i++) {
+        const s = p.subs[i];
+        const n = s.length / 2;
+        if (n < 8) continue;
+        let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+        for (let k = 0; k < s.length; k += 2) {
+          if (s[k] < x0) x0 = s[k]; if (s[k] > x1) x1 = s[k];
+          if (s[k + 1] < y0) y0 = s[k + 1]; if (s[k + 1] > y1) y1 = s[k + 1];
+        }
+        const w = x1 - x0, h = y1 - y0;
+        if (w < 8 || w > 70 || h < 8 || h > 70) continue;
+        if (Math.abs(w - h) > 0.08 * Math.max(w, h)) continue;
+        const closed = p.closed[i] || Math.hypot(s[0] - s[s.length - 2], s[1] - s[s.length - 1]) < 0.02 * w + 0.5;
+        if (!closed) continue;
+        if (p.ncurv[i] > 0 && p.ncurv[i] < 4) continue;
+        const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+        let m = 0; const r = [];
+        for (let k = 0; k < s.length; k += 2) { const d = Math.hypot(s[k] - cx, s[k + 1] - cy); r.push(d); m += d; }
+        m /= r.length;
+        let v = 0; for (const d of r) v += (d - m) * (d - m);
+        const sd = Math.sqrt(v / r.length);
+        if (sd / m >= 0.06) continue;
+        // angular coverage: polyline circles need points all around
+        let quad = 0; for (let k = 0; k < s.length; k += 2) { const a = Math.atan2(s[k + 1] - cy, s[k] - cx); quad |= 1 << Math.min(7, Math.floor((a + Math.PI) / (Math.PI / 4))); }
+        if (quad !== 255) continue;
+        out.push({ cx, cy, d: (w + h) / 2, ocg: p.ocg, fill: p.fill, stroke: p.stroke });
+      }
+    }
+    // merge concentric duplicates (fill+stroke, ring drawn as two fills); keep outer diameter
+    out.sort((a, b) => b.d - a.d);
+    const merged = [];
+    for (const c of out) {
+      const m = merged.find(o => Math.hypot(o.cx - c.cx, o.cy - c.cy) < Math.max(1.5, 0.08 * o.d) && c.d > 0.8 * o.d);
+      if (m) continue;
+      // also drop small circles fully inside a bigger one (e.g. inner ring)
+      merged.push(c);
+    }
+    return merged;
+  };
+
+  function kasa(p) {
+    let n = 0, sx = 0, sy = 0, sxx = 0, syy = 0, sxy = 0, sxz = 0, syz = 0, sz = 0;
+    for (let k = 0; k < p.length; k += 2) { const x = p[k], y = p[k + 1], z = x * x + y * y; n++; sx += x; sy += y; sxx += x * x; syy += y * y; sxy += x * y; sxz += x * z; syz += y * z; sz += z; }
+    // solve [sxx sxy sx; sxy syy sy; sx sy n] [D E F] = -[sxz syz sz]
+    const M = [[sxx, sxy, sx], [sxy, syy, sy], [sx, sy, n]], R = [-sxz, -syz, -sz];
+    for (let c = 0; c < 3; c++) { let pv = c; for (let r = c + 1; r < 3; r++) if (Math.abs(M[r][c]) > Math.abs(M[pv][c])) pv = r; [M[c], M[pv]] = [M[pv], M[c]]; [R[c], R[pv]] = [R[pv], R[c]]; if (Math.abs(M[c][c]) < 1e-9) return null; for (let r = 0; r < 3; r++) if (r !== c) { const f = M[r][c] / M[c][c]; for (let k = c; k < 3; k++) M[r][k] -= f * M[c][k]; R[r] -= f * R[c]; } }
+    const D = R[0] / M[0][0], E2 = R[1] / M[1][1], F = R[2] / M[2][2];
+    const cx = -D / 2, cy = -E2 / 2, rr = cx * cx + cy * cy - F;
+    return rr > 0 ? { cx, cy, r: Math.sqrt(rr) } : null;
+  }
+
+  // ---------- text-anchored rings ----------
+  // Some exports (e.g. flattened or "stapled" sets) draw bubbles as hundreds of tiny filled triangles,
+  // so no single path is a circle. Look for a ring of geometry around each grid-like label instead.
+  E.findTextRings = function (X, existing) {
+    const out = [];
+    const cell = 20, grid = new Map();
+    const key = (i, j) => i * 100003 + j;
+    for (const p of X.paths) for (const s of p.subs) for (let k = 0; k < s.length; k += 2) {
+      const i = Math.floor(s[k] / cell), j = Math.floor(s[k + 1] / cell); const kk = key(i, j);
+      let a = grid.get(kk); if (!a) grid.set(kk, a = []); a.push(s[k], s[k + 1]);
+    }
+    const near = (x, y, R) => { const res = []; for (let i = Math.floor((x - R) / cell); i <= Math.floor((x + R) / cell); i++) for (let j = Math.floor((y - R) / cell); j <= Math.floor((y + R) / cell); j++) { const a = grid.get(key(i, j)); if (a) for (let k = 0; k < a.length; k += 2) res.push(a[k], a[k + 1]); } return res; };
+    for (const t of X.text) {
+      const lab = t.s.replace(/\s+/g, '').toUpperCase();
+      if (!(COL_RE.test(lab) || ROW_RE.test(lab)) || lab.length > 5) continue;
+      if (!(t.h > 3 && t.h < 30)) continue;
+      if (existing.some(c => Math.hypot(c.cx - t.cx, c.cy - t.cy) < c.d / 2)) continue;
+      if (out.some(c => Math.hypot(c.cx - t.cx, c.cy - t.cy) < c.d / 2)) continue;
+      const minR = Math.max(4, 0.45 * Math.max(t.h, Math.abs(t.w || 0))), maxR = 36;
+      // coarse centre search: the label is rarely exactly centred in its bubble
+      let cx = t.cx, cy = t.cy;
+      {
+        const pts0 = near(t.cx, t.cy, maxR + 8);
+        let bestSc = -1;
+        const hist = new Float64Array(Math.ceil(maxR * 2) + 3);
+        if (pts0.length > 12000) continue;
+        const scan = (x0, y0, span, step) => {
+          let bx = x0, by = y0;
+          for (let dx = -span; dx <= span + 1e-9; dx += step) for (let dy = -span; dy <= span + 1e-9; dy += step) {
+            const qx = x0 + dx, qy = y0 + dy; hist.fill(0);
+            for (let k = 0; k < pts0.length; k += 2) { const ex = pts0[k] - qx, ey = pts0[k + 1] - qy; const d2 = ex * ex + ey * ey; if (d2 >= minR * minR && d2 <= maxR * maxR) hist[Math.round(Math.sqrt(d2) * 2)]++; }
+            for (let b = 1; b < hist.length - 1; b++) { const v = hist[b - 1] + hist[b] + hist[b + 1]; if (v > bestSc) { bestSc = v; bx = qx; by = qy; } }
+          }
+          return [bx, by];
+        };
+        [cx, cy] = scan(t.cx, t.cy, 6, 2);
+        [cx, cy] = scan(cx, cy, 1, 0.5);
+      }
+      let ring = null;
+      for (let iter = 0; iter < 3; iter++) {
+        const pts = near(cx, cy, maxR + 2);
+        const hist = new Float64Array(Math.ceil(maxR * 2) + 2);
+        for (let k = 0; k < pts.length; k += 2) { const d = Math.hypot(pts[k] - cx, pts[k + 1] - cy); if (d >= minR && d <= maxR) hist[Math.round(d * 2)]++; }
+        let best = -1, bi = 0;
+        for (let b = Math.ceil(minR * 2); b < hist.length - 2; b++) { const v = hist[b - 2] + hist[b - 1] + hist[b] + hist[b + 1] + hist[b + 2]; if (v > best) { best = v; bi = b; } }
+        const r0 = bi / 2;
+        const rp = [];
+        let oct = 0;
+        const rtol = iter === 0 ? 3.5 : 1.6;
+        for (let k = 0; k < pts.length; k += 2) { const d = Math.hypot(pts[k] - cx, pts[k + 1] - cy); if (Math.abs(d - r0) <= rtol) { rp.push(pts[k], pts[k + 1]); oct |= 1 << Math.min(7, Math.floor((Math.atan2(pts[k + 1] - cy, pts[k] - cx) + Math.PI) / (Math.PI / 4))); } }
+        let nOct = 0; for (let b = 0; b < 8; b++) if (oct & (1 << b)) nOct++;
+        if (E._dbg) console.log('ring iter', iter, 'c', cx.toFixed(1), cy.toFixed(1), 'r0', r0, 'n', rp.length / 2, 'oct', nOct);
+        if (rp.length < 12 || nOct < (iter === 0 ? 7 : 8)) { ring = null; break; }
+        // refine centre with an algebraic (Kasa) circle fit of the ring points
+        const fit = kasa(rp);
+        if (E._dbg) console.log('fit', fit);
+        if (!fit) { ring = null; break; }
+        const ncx = fit.cx, ncy = fit.cy;
+        ring = { cx: ncx, cy: ncy, d: 2 * fit.r, n: rp.length / 2 };
+        if (Math.hypot(ncx - cx, ncy - cy) < 0.2) break;
+        cx = ncx; cy = ncy;
+      }
+      if (!ring || ring.d < 8 || ring.d > 70) continue;
+      // radial consistency check of the ring points
+      out.push({ cx: ring.cx, cy: ring.cy, d: ring.d, ocg: -1, fill: true, stroke: false, fromText: true });
+    }
+    return out;
+  };
+
+  // ---------- labels ----------
+  const COL_RE = /^\d{1,3}(\.\d{1,2})?[A-Z]?$/;
+  const ROW_RE = /^[A-Z]{1,2}(\.\d{1,2})?'?$/;
+  function labelType(s) {
+    if (!s) return null;
+    if (COL_RE.test(s)) return 'num';
+    if (ROW_RE.test(s)) return 'alpha';
+    return 'bad';
+  }
+  E.labelType = labelType;
+
+  E.labelBubbles = function (circles, text) {
+    // spatial bucket of text by center
+    for (const c of circles) {
+      const r = c.d / 2;
+      const inside = text.filter(t => Math.hypot(t.cx - c.cx, t.cy - c.cy) < r * 0.85 && t.h < c.d * 1.1);
+      inside.sort((a, b) => a.cx - b.cx);
+      let s = inside.map(t => t.s).join('').replace(/\s+/g, '').toUpperCase();
+      if (s.length > 6) s = '';
+      c.label = s || null;
+      c.ltype = labelType(c.label);
+    }
+  };
+
+  // ---------- grouping ----------
+  function clusterBy(items, key, tol) {
+    const srt = items.slice().sort((a, b) => key(a) - key(b));
+    const groups = []; let g = null;
+    for (const it of srt) {
+      if (g && key(it) - g.ref <= tol) { g.items.push(it); g.ref = median(g.items.map(key)); }
+      else { g = { ref: key(it), items: [it] }; groups.push(g); }
+    }
+    return groups;
+  }
+
+  // Remove items whose label type disagrees with group majority; dedupe same label keeping first.
+  function cleanGroup(items) {
+    const cnt = { num: 0, alpha: 0 };
+    for (const c of items) if (c.ltype === 'num' || c.ltype === 'alpha') cnt[c.ltype]++;
+    const want = cnt.num === 0 && cnt.alpha === 0 ? null : (cnt.num >= cnt.alpha ? 'num' : 'alpha');
+    let res = items.filter(c => !want || !(c.ltype === 'num' || c.ltype === 'alpha') || c.ltype === want);
+    return { items: res, type: want };
+  }
+
+  // Joint selection of column + row grid groups. opts.trace(c, axis) -> trace or null (cached on the circle).
+  // A bubble with a traced grid line counts fully; an untraced one counts 0.2, so keynote/legend
+  // symbol columns (no grid line) lose to real grids even when they are more numerous.
+  E.findGridGroups = function (circles, opts) {
+    opts = opts || {};
+    const tol = opts.tol || 12;
+    const tr = (c, ax) => {
+      if (!opts.trace) return null;
+      const k = 'tr' + ax; if (!(k in c)) c[k] = opts.trace(c, ax); return c[k];
+    };
+    const groupScore = (items, ax, want) => {
+      let sc = 0, traced = 0;
+      // probe a few spread-out bubbles first; skip tracing the rest when none of them has a grid line
+      const probe = items.length > 4 ? [0, Math.floor(items.length / 3), Math.floor(2 * items.length / 3), items.length - 1].map(i => items[i]) : items;
+      const anyLine = !opts.trace || probe.some(c => tr(c, ax));
+      for (const c of items) { const t = anyLine ? tr(c, ax) : null; if (t) { sc += 1; traced++; } else sc += opts.trace ? 0.2 : 1; }
+      const n = items.filter(c => c.ltype === want).length;
+      return { sc: sc + (n ? 0.5 : 0) + 0.01 * n, traced };
+    };
+    // column candidates
+    const colC = [];
+    for (const g of clusterBy(circles, c => c.cy, tol)) for (const dg of clusterBy(g.items, c => c.d, 1.5)) {
+      if (dg.items.length < 2) continue;
+      const cg = cleanGroup(dg.items);
+      if (cg.items.length < 2) continue;
+      colC.push({ items: cg.items, type: cg.type, d: median(dg.items.map(c => c.d)), y: g.ref });
+    }
+    colC.sort((a, b) => b.items.length - a.items.length);
+    let best = null;
+    for (const cc of colC.slice(0, 12)) {
+      const cs = groupScore(cc.items, 'v', 'num');
+      const D = cc.d;
+      const same = circles.filter(c => Math.abs(c.d - D) <= Math.max(1.5, 0.06 * D) && !cc.items.includes(c));
+      let bestR = null;
+      for (const g of clusterBy(same, c => c.cx, tol)) {
+        if (g.items.length < 2) continue;
+        const cg = cleanGroup(g.items);
+        if (cg.items.length < 2) continue;
+        if (cc.type && cg.type === cc.type && cg.items.every(c => c.ltype === cc.type)) continue; // same label type as columns
+        const rs = groupScore(cg.items, 'h', 'alpha');
+        if (!bestR || rs.sc > bestR.sc) bestR = { sc: rs.sc, traced: rs.traced, items: cg.items, type: cg.type };
+      }
+      const total = cs.sc + (bestR ? bestR.sc : 0);
+      if (!best || total > best.total) best = { total, cc, cs, bestR, D };
+    }
+    if (!best) return null;
+    const cols = best.cc.items.slice().sort((a, b) => a.cx - b.cx);
+    const rows = best.bestR ? best.bestR.items.slice().sort((a, b) => a.cy - b.cy) : [];
+    const colType = best.cc.type, rowType = best.bestR ? best.bestR.type : null;
+    for (const c of cols) c.tr = c.trv || null;
+    for (const c of rows) c.tr = c.trh || null;
+    return {
+      D: best.D,
+      cols: cols.filter(c => !(rowType && c.ltype === rowType && colType !== rowType)),
+      rows: rows.filter(c => !(colType && c.ltype === colType && colType !== rowType)),
+      colType, rowType, tracedCols: best.cs.traced, tracedRows: best.bestR ? best.bestR.traced : 0
+    };
+  };
+
+  // ---------- grid line tracing ----------
+  // Build a simple spatial index over stroked segments.
+  E.buildSegIndex = function (X, cell) {
+    cell = cell || 32;
+    const S = X.segs; const n = S.length / 4;
+    const grid = new Map();
+    const key = (i, j) => i * 100003 + j;
+    for (let s = 0; s < n; s++) {
+      const x1 = S[4 * s], y1 = S[4 * s + 1], x2 = S[4 * s + 2], y2 = S[4 * s + 3];
+      const i0 = Math.floor(Math.min(x1, x2) / cell), i1 = Math.floor(Math.max(x1, x2) / cell);
+      const j0 = Math.floor(Math.min(y1, y2) / cell), j1 = Math.floor(Math.max(y1, y2) / cell);
+      if ((i1 - i0 + 1) * (j1 - j0 + 1) > 400) { // very long segment: register along its length
+        const L = Math.hypot(x2 - x1, y2 - y1); const st = Math.ceil(L / (cell / 2));
+        const seen = new Set();
+        for (let t = 0; t <= st; t++) { const x = x1 + (x2 - x1) * t / st, y = y1 + (y2 - y1) * t / st; const k = key(Math.floor(x / cell), Math.floor(y / cell)); if (!seen.has(k)) { seen.add(k); (grid.get(k) || grid.set(k, []).get(k)).push(s); } }
+        continue;
+      }
+      for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) { const k = key(i, j); let a = grid.get(k); if (!a) grid.set(k, a = []); a.push(s); }
+    }
+    return {
+      cell, S, n, meta: X.segMeta,
+      stamp: new Int32Array(n), gen: 0,
+      query(x0, y0, x1, y1) {
+        const res = []; const st = this.stamp; const g = ++this.gen;
+        for (let i = Math.floor(x0 / cell); i <= Math.floor(x1 / cell); i++)
+          for (let j = Math.floor(y0 / cell); j <= Math.floor(y1 / cell); j++) {
+            const a = grid.get(key(i, j)); if (!a) continue;
+            for (let k = 0; k < a.length; k++) { const s = a[k]; if (st[s] === g) continue; st[s] = g;
+              const sx0 = S[4 * s], sy0 = S[4 * s + 1], sx1 = S[4 * s + 2], sy1 = S[4 * s + 3];
+              if (Math.max(sx0, sx1) < x0 || Math.min(sx0, sx1) > x1 || Math.max(sy0, sy1) < y0 || Math.min(sy0, sy1) > y1) continue;
+              res.push(s); }
+          }
+        return res;
+      }
+    };
+  };
+
+  // Trace from a bubble along its grid line (follows jogged leaders and dash-dot gaps).
+  // axis: 'v' for column bubbles (grid line vertical), 'h' for row bubbles.
+  // Returns {pos, run, off, bends, method} or null.
+  E.traceGridLine = function (b, axis, idx, opts) {
+    opts = opts || {};
+    const S = idx.S, meta = idx.meta;
+    const onlyOcg = opts.gridOcg; // Set of ocg indices, or null
+    const r = b.d / 2, D = b.d;
+    const ax = axis === 'v' ? [0, 1] : [1, 0];
+    const G = Math.max(14, 1.3 * D); // dash gap tolerance
+    const okSeg = s => !onlyOcg || onlyOcg.has(meta[3 * s + 1]);
+    const P = (s, e) => e ? [S[4 * s + 2], S[4 * s + 3]] : [S[4 * s], S[4 * s + 1]];
+    const unit = (x, y) => { const l = Math.hypot(x, y) || 1; return [x / l, y / l]; };
+    const maxLen = opts.maxLen || 3000;
+
+    const starts = [];
+    for (const s of idx.query(b.cx - r - 4, b.cy - r - 4, b.cx + r + 4, b.cy + r + 4)) {
+      if (!okSeg(s)) continue;
+      for (const e of [0, 1]) {
+        const pe = P(s, e), po = P(s, 1 - e);
+        const de = Math.hypot(pe[0] - b.cx, pe[1] - b.cy), dO = Math.hypot(po[0] - b.cx, po[1] - b.cy);
+        if (Math.abs(de - r) > Math.max(1.2, 0.2 * r)) continue;
+        if (dO < de + 0.5) continue;
+        const u = unit(po[0] - pe[0], po[1] - pe[1]), rad = unit(pe[0] - b.cx, pe[1] - b.cy);
+        if (u[0] * rad[0] + u[1] * rad[1] < 0.5) continue;
+        if (Math.abs(u[0] * ax[0] + u[1] * ax[1]) < 0.75) continue; // leaders leave the bubble roughly along the grid axis
+        starts.push({ s, pe, po, len: Math.hypot(po[0] - pe[0], po[1] - pe[1]) });
+      }
+    }
+    starts.sort((a, b) => b.len - a.len);
+    let best = null;
+    for (const st of starts.slice(0, 6)) {
+      const chain = [[st.pe[0], st.pe[1], st.po[0], st.po[1]]];
+      const used = new Set([st.s]);
+      let q = st.po, u = unit(st.po[0] - st.pe[0], st.po[1] - st.pe[1]);
+      let total = Math.hypot(st.po[0] - st.pe[0], st.po[1] - st.pe[1]);
+      let bends = 0, runStart = null;
+      const enough = Math.max(500, 15 * D);
+      for (let it = 0; it < 1500 && total < maxLen; it++) {
+        // stop once a long straight run along the grid axis is established
+        if (Math.abs(u[0] * ax[1] - u[1] * ax[0]) < 0.01) { if (!runStart) runStart = q; else if (Math.hypot(q[0] - runStart[0], q[1] - runStart[1]) > enough) break; } else runStart = null;
+        const ex = q[0] + u[0] * G, ey = q[1] + u[1] * G;
+        const cand = idx.query(Math.min(q[0], ex) - 1, Math.min(q[1], ey) - 1, Math.max(q[0], ex) + 1, Math.max(q[1], ey) + 1);
+        let pick = null, pickCost = Infinity;
+        const allowBend = bends < 3 && total < 8 * D;
+        for (const s of cand) {
+          if (used.has(s) || !okSeg(s)) continue;
+          for (const e of [0, 1]) {
+            const pe = P(s, e), po = P(s, 1 - e);
+            const vx = pe[0] - q[0], vy = pe[1] - q[1];
+            const dist = Math.hypot(vx, vy);
+            if (dist > G) continue;
+            const sl = Math.hypot(po[0] - pe[0], po[1] - pe[1]);
+            if (sl < 0.05) continue;
+            const w = [(po[0] - pe[0]) / sl, (po[1] - pe[1]) / sl];
+            const par = Math.abs(w[0] * u[1] - w[1] * u[0]) < 0.03 && (w[0] * u[0] + w[1] * u[1]) > 0;
+            const along = vx * u[0] + vy * u[1];
+            const perp = Math.abs(vx * u[1] - vy * u[0]);
+            let cost = Infinity;
+            if (par && perp < 0.6 && along > -0.6) cost = Math.max(0, along); // straight continuation (gap ok)
+            else if (dist < 0.6 && allowBend && (w[0] * u[0] + w[1] * u[1]) > -0.3) cost = 2 + dist; // bend at a joint
+            if (cost < pickCost) { pickCost = cost; pick = { s, pe, po, w, bend: !par }; }
+          }
+        }
+        if (!pick) break;
+        used.add(pick.s);
+        chain.push([pick.pe[0], pick.pe[1], pick.po[0], pick.po[1]]);
+        if (pick.bend) bends++;
+        total += Math.hypot(pick.po[0] - pick.pe[0], pick.po[1] - pick.pe[1]);
+        q = pick.po; u = pick.w;
+      }
+      // final axis-parallel run
+      let run = 0, acc = 0, ref = null, amin = Infinity, amax = -Infinity;
+      for (let k = chain.length - 1; k >= 0; k--) {
+        const c = chain[k];
+        const l = Math.hypot(c[2] - c[0], c[3] - c[1]);
+        const w = unit(c[2] - c[0], c[3] - c[1]);
+        if (Math.abs(w[0] * ax[1] - w[1] * ax[0]) > 0.01) break;
+        const across = axis === 'v' ? (c[0] + c[2]) / 2 : (c[1] + c[3]) / 2;
+        if (ref !== null && Math.abs(across - ref) > 0.6) break;
+        if (ref === null) ref = across;
+        run += l; acc += across * l;
+        const a1 = axis === 'v' ? c[1] : c[0], a2 = axis === 'v' ? c[3] : c[2];
+        amin = Math.min(amin, a1, a2); amax = Math.max(amax, a1, a2);
+      }
+      if (run <= 0) continue;
+      const pos = acc / run;
+      const res = { pos, run: amax - amin, ink: run, total, bends, off: pos - (axis === 'v' ? b.cx : b.cy), pieces: chain.length, method: 'trace' };
+      if (Math.abs(res.off) > 6 * D) continue;
+      if (!best || res.run > best.run) best = res;
+    }
+    if (best && best.run >= 2.5 * D) return best;
+    return null;
+  };
+
+  E.median = median;
+  if (typeof module !== 'undefined' && module.exports) module.exports = E;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// Similarity solve (shared scale, separate tx/ty) between two grid systems.
+(function (root) {
+  const E = root.OverlayEngine || (root.OverlayEngine = {});
+  const median = (a) => { if (!a.length) return NaN; const b = a.slice().sort((x, y) => x - y); const m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+
+  // Grid summary from analysed groups: lines = [{label, ltype, pos, bubble, method}]
+  E.gridLines = function (G) {
+    if (!G) return { cols: [], rows: [], D: 0 };
+    const mk = (b, ax) => ({
+      label: b.ltype === 'num' || b.ltype === 'alpha' ? b.label : null,
+      pos: b.tr ? b.tr.pos : (ax === 'v' ? b.cx : b.cy),
+      bubble: ax === 'v' ? b.cx : b.cy,
+      method: b.tr ? (b.tr.bends ? 'jog' : 'trace') : 'center'
+    });
+    const dedupe = (arr) => { // collapse lines at the same position (e.g. duplicate tags)
+      arr.sort((a, b) => a.pos - b.pos);
+      const out = [];
+      for (const l of arr) { const p = out[out.length - 1]; if (p && Math.abs(p.pos - l.pos) < 1.0) { if (!p.label && l.label) p.label = l.label; continue; } out.push(l); }
+      return out;
+    };
+    return { cols: dedupe(G.cols.map(b => mk(b, 'v'))), rows: dedupe(G.rows.map(b => mk(b, 'h'))), D: G.D };
+  };
+
+  function sortedPos(lines) { return lines.map(l => l.pos).sort((a, b) => a - b); }
+  function nearestIdx(arr, v) { // arr sorted
+    let lo = 0, hi = arr.length - 1;
+    if (hi < 0) return -1;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (arr[m] < v) lo = m + 1; else hi = m; }
+    if (lo > 0 && Math.abs(arr[lo - 1] - v) <= Math.abs(arr[lo] - v)) return lo - 1;
+    return lo;
+  }
+
+  // Matches ov lines to base lines for transform b = s*o + t. Returns {n, labelAgree, labelConflict, pairs}
+  function matchAxis(bLines, oLines, s, t, tol) {
+    const bp = bLines.map(l => l.pos);
+    const order = bp.map((v, i) => i).sort((a, b) => bp[a] - bp[b]);
+    const sp = order.map(i => bp[i]);
+    const used = new Map();
+    const pairs = [];
+    for (let j = 0; j < oLines.length; j++) {
+      const v = s * oLines[j].pos + t;
+      const k = nearestIdx(sp, v); if (k < 0) continue;
+      const err = Math.abs(sp[k] - v);
+      if (err > tol) continue;
+      const bi = order[k];
+      const prev = used.get(bi);
+      if (prev !== undefined) { if (pairs[prev].err <= err) continue; pairs[prev].dead = true; }
+      used.set(bi, pairs.length);
+      pairs.push({ b: bLines[bi], o: oLines[j], err });
+    }
+    const live = pairs.filter(p => !p.dead);
+    let agree = 0, conflict = 0;
+    for (const p of live) if (p.b.label && p.o.label) { if (p.b.label === p.o.label) agree++; else conflict++; }
+    return { n: live.length, agree, conflict, pairs: live };
+  }
+
+  function bestOffset(bLines, oLines, s, tol, labelW) {
+    let best = null; const seen = [];
+    for (const bl of bLines) for (const ol of oLines) {
+      const t = bl.pos - s * ol.pos;
+      if (seen.some(v => Math.abs(v - t) < tol * 0.5)) continue;
+      seen.push(t);
+      const m = matchAxis(bLines, oLines, s, t, tol);
+      // refine t on the inliers
+      if (m.n) { const tt = median(m.pairs.map(p => p.b.pos - s * p.o.pos)); m.t = tt; } else m.t = t;
+      m.score = m.n + labelW * m.agree;
+      m.err = m.pairs.reduce((a, p) => a + p.err, 0) / Math.max(1, m.n);
+      if (!best || m.score > best.score + 1e-9 || (Math.abs(m.score - best.score) < 1e-9 && m.err < best.err)) best = m;
+    }
+    return best;
+  }
+
+  function lsq(px, py) { // b = s*o + tx  (px), b = s*o + ty (py)
+    // unknowns s, tx, ty. Normal equations.
+    let Soo = 0, Sox = 0, Soy = 0, Sx = 0, Sy = 0, Sbo = 0, Sbx = 0, Sby = 0; const nx = px.length, ny = py.length;
+    for (const p of px) { Soo += p.o * p.o; Sox += p.o; Sbo += p.b * p.o; Sbx += p.b; }
+    for (const p of py) { Soo += p.o * p.o; Soy += p.o; Sbo += p.b * p.o; Sby += p.b; }
+    // [Soo Sox Soy; Sox nx 0; Soy 0 ny] [s tx ty] = [Sbo Sbx Sby]
+    if (!nx || !ny) {
+      if (!nx && !ny) return null;
+    }
+    const A = [[Soo, Sox, Soy], [Sox, nx, 0], [Soy, 0, ny]], B = [Sbo, Sbx, Sby];
+    // drop zero rows
+    const idx = [0]; if (nx) idx.push(1); if (ny) idx.push(2);
+    const M = idx.map(i => idx.map(j => A[i][j])), R = idx.map(i => B[i]);
+    const n = idx.length;
+    for (let c = 0; c < n; c++) { // gauss
+      let p = c; for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+      [M[c], M[p]] = [M[p], M[c]]; [R[c], R[p]] = [R[p], R[c]];
+      if (Math.abs(M[c][c]) < 1e-12) return null;
+      for (let r = 0; r < n; r++) if (r !== c) { const f = M[r][c] / M[c][c]; for (let k = c; k < n; k++) M[r][k] -= f * M[c][k]; R[r] -= f * R[c]; }
+    }
+    const sol = { s: R[0] / M[0][0], tx: NaN, ty: NaN };
+    let k = 1; if (nx) { sol.tx = R[k] / M[k][k]; k++; } if (ny) sol.ty = R[k] / M[k][k];
+    return sol;
+  }
+
+  // standard drawing-scale ratios (architectural in/ft scales and engineering 1:N scales)
+  const NICE = (() => {
+    const arch = [1 / 32, 1 / 16, 3 / 32, 1 / 8, 3 / 16, 1 / 4, 3 / 8, 1 / 2, 3 / 4, 1, 1.5, 3];
+    const eng = [10, 20, 30, 40, 50, 60, 80, 100, 200].map(n => 1 / n);
+    const r = new Set();
+    for (const fam of [arch, eng]) for (const a of fam) for (const b of fam) r.add(+(a / b).toFixed(6));
+    return [...r];
+  })();
+  E.niceScaleErr = function (s) { let e = Infinity; for (const r of NICE) e = Math.min(e, Math.abs(Math.log(s / r))); return e; };
+
+  // Main: returns {hyps:[{s,tx,ty,score,nx,ny,agree,conflict,rms,pairsX,pairsY}], ...}
+  E.solveGrids = function (base, ov, opts) {
+    opts = opts || {};
+    const tol = opts.tol || 3.0;
+    const labelW = opts.labelW == null ? 1.0 : opts.labelW;
+    const sMin = opts.sMin || 0.08, sMax = opts.sMax || 12;
+    const bc = base.cols, br = base.rows, oc = ov.cols, or = ov.rows;
+    if ((oc.length + or.length) < 2 || (bc.length + br.length) < 2) return { hyps: [], reason: 'not enough grid lines' };
+
+    // --- scale candidates ---
+    const cand = [];
+    const addPairs = (bL, oL, w) => {
+      const bp = sortedPos(bL), op = sortedPos(oL);
+      for (let j = 1; j < op.length; j++) {
+        const go = op[j] - op[j - 1]; if (go < 1) continue;
+        for (let a = 0; a < bp.length; a++) for (let b = a + 1; b < bp.length; b++) {
+          const s = (bp[b] - bp[a]) / go; if (s >= sMin && s <= sMax) cand.push([Math.log(s), w]);
+        }
+      }
+    };
+    addPairs(bc, oc, 1); addPairs(br, or, 1);
+    // label-based scale (pairwise ratios over matched labels)
+    const labScale = (() => {
+      const r = [];
+      for (const [bL, oL] of [[bc, oc], [br, or]]) {
+        const m = []; for (const o of oL) if (o.label) { const b = bL.find(x => x.label === o.label); if (b) m.push([b.pos, o.pos]); }
+        for (let i = 0; i < m.length; i++) for (let j = i + 1; j < m.length; j++) { const d = m[j][1] - m[i][1]; if (Math.abs(d) > 5) { const s = (m[j][0] - m[i][0]) / d; if (s > 0) r.push(s); } }
+      }
+      return r.length ? median(r) : null;
+    })();
+    // cluster log-scale candidates (0.25% bins)
+    const bins = new Map();
+    for (const [ls, w] of cand) { const k = Math.round(ls / 0.0025); bins.set(k, (bins.get(k) || 0) + w); }
+    const sm = [...bins.entries()].map(([k, v]) => [k, v + 0.5 * ((bins.get(k - 1) || 0) + (bins.get(k + 1) || 0))]).sort((a, b) => b[1] - a[1]);
+    const scales = sm.slice(0, opts.maxScales || 60).map(([k]) => Math.exp(k * 0.0025));
+    if (labScale) scales.unshift(labScale);
+    scales.push(1.0);
+
+    // --- hypotheses ---
+    const hyps = [];
+    for (const s0 of scales) {
+      const mx = bestOffset(bc, oc, s0, tol, labelW), my = bestOffset(br, or, s0, tol, labelW);
+      if (!mx && !my) continue;
+      // refit on inliers
+      const px = mx ? mx.pairs.map(p => ({ b: p.b.pos, o: p.o.pos })) : [], py = my ? my.pairs.map(p => ({ b: p.b.pos, o: p.o.pos })) : [];
+      let s = s0, tx = mx ? mx.t : NaN, ty = my ? my.t : NaN;
+      if (px.length + py.length >= 2) {
+        // only let LS change s if there's spread on some axis
+        const sol = lsq(px, py);
+        if (sol && sol.s > 0 && Math.abs(Math.log(sol.s / s0)) < 0.02) { s = sol.s; if (px.length) tx = sol.tx; if (py.length) ty = sol.ty; }
+      }
+      // re-match with refined params (final inlier sets)
+      const fx = Number.isFinite(tx) ? matchAxis(bc, oc, s, tx, tol) : { n: 0, agree: 0, conflict: 0, pairs: [] };
+      const fy = Number.isFinite(ty) ? matchAxis(br, or, s, ty, tol) : { n: 0, agree: 0, conflict: 0, pairs: [] };
+      const errs = fx.pairs.concat(fy.pairs).map(p => p.err);
+      const rms = errs.length ? Math.sqrt(errs.reduce((a, e) => a + e * e, 0) / errs.length) : Infinity;
+      const nice = E.niceScaleErr(s) < 0.006;
+      const score = fx.n + fy.n + labelW * (fx.agree + fy.agree) - 0.05 * rms - (nice ? 0 : 1.5);
+      const h = { s, tx, ty, score, nice, nx: fx.n, ny: fy.n, agree: fx.agree + fy.agree, conflict: fx.conflict + fy.conflict, rms, pairsX: fx.pairs, pairsY: fy.pairs };
+      if (!fx.n || !fy.n) h.partial = true;
+      if (hyps.some(o => Math.abs(o.s / h.s - 1) < 0.001 && Math.abs(o.tx - h.tx) < 1.5 && Math.abs(o.ty - h.ty) < 1.5)) continue;
+      hyps.push(h);
+    }
+    // also: explicit label-consensus hypotheses per axis (offset clustering with outliers), helps when labels disagree
+    hyps.sort((a, b) => (b.partial ? -1 : 0) - (a.partial ? -1 : 0) || b.score - a.score);
+    return { hyps, labScale };
+  };
+
+  E.matchAxis = matchAxis;
+  if (typeof module !== 'undefined' && module.exports) module.exports = E;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// Drawing-overlap score (browser only: needs canvas). Fraction of overlay ink pixels within R px of base ink.
+(function (root) {
+  const E = root.OverlayEngine || (root.OverlayEngine = {});
+
+  async function renderGray(page, scale) {
+    const vp = page.getViewport({ scale });
+    const w = Math.ceil(vp.width), h = Math.ceil(vp.height);
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+    await page.render({ canvasContext: ctx, viewport: vp, annotationMode: 0 }).promise;
+    const d = ctx.getImageData(0, 0, w, h).data;
+    cv.width = cv.height = 0;
+    return { w, h, d };
+  }
+
+  // ink mask with title block masked and dense fills/hatch suppressed
+  function inkMask(img, opts) {
+    const { w, h, d } = img;
+    const ink = new Uint8Array(w * h);
+    const tbx = Math.floor(w * (1 - (opts.titleFrac == null ? 0.1 : opts.titleFrac)));
+    for (let i = 0, p = 0; i < w * h; i++, p += 4) {
+      const x = i % w;
+      if (x >= tbx) continue;
+      const lum = 0.299 * d[p] + 0.587 * d[p + 1] + 0.114 * d[p + 2];
+      if (lum < 190) ink[i] = 1;
+    }
+    // integral image for density
+    const R = opts.denseR || 4, lim = opts.denseMax || 0.45;
+    const W1 = w + 1; const I = new Uint32Array(W1 * (h + 1));
+    for (let y = 0; y < h; y++) { let row = 0; for (let x = 0; x < w; x++) { row += ink[y * w + x]; I[(y + 1) * W1 + x + 1] = I[y * W1 + x + 1] + row; } }
+    const out = new Uint8Array(w * h);
+    const area = (2 * R + 1) * (2 * R + 1);
+    for (let y = 0; y < h; y++) {
+      const y0 = Math.max(0, y - R), y1 = Math.min(h, y + R + 1);
+      for (let x = 0; x < w; x++) {
+        if (!ink[y * w + x]) continue;
+        const x0 = Math.max(0, x - R), x1 = Math.min(w, x + R + 1);
+        const s = I[y1 * W1 + x1] - I[y0 * W1 + x1] - I[y1 * W1 + x0] + I[y0 * W1 + x0];
+        if (s / area < lim) out[y * w + x] = 1;
+      }
+    }
+    return out;
+  }
+
+  function dilate(m, w, h, r) {
+    const t = new Uint8Array(w * h), o = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) {
+      let last = -1e9;
+      for (let x = 0; x < w; x++) { if (m[y * w + x]) last = x; if (x - last <= r) t[y * w + x] = 1; }
+      last = 1e9;
+      for (let x = w - 1; x >= 0; x--) { if (m[y * w + x]) last = x; if (last - x <= r) t[y * w + x] = 1; }
+    }
+    for (let x = 0; x < w; x++) {
+      let last = -1e9;
+      for (let y = 0; y < h; y++) { if (t[y * w + x]) last = y; if (y - last <= r) o[y * w + x] = 1; }
+      last = 1e9;
+      for (let y = h - 1; y >= 0; y--) { if (t[y * w + x]) last = y; if (last - y <= r) o[y * w + x] = 1; }
+    }
+    return o;
+  }
+
+  // Base: dilated ink at k px/pt
+  E.baseInk = async function (page, k, opts) {
+    opts = opts || {};
+    const img = await renderGray(page, k);
+    const m = inkMask(img, opts);
+    return { w: img.w, h: img.h, k, mask: dilate(m, img.w, img.h, opts.r || 2) };
+  };
+  // Overlay: sampled ink points in page points
+  E.overlayInk = async function (page, k, opts) {
+    opts = opts || {};
+    const img = await renderGray(page, k);
+    const m = inkMask(img, opts);
+    const pts = [];
+    for (let i = 0; i < m.length; i++) if (m[i]) pts.push(i);
+    const maxN = opts.maxN || 150000; const step = Math.max(1, Math.floor(pts.length / maxN));
+    const xs = new Float32Array(Math.ceil(pts.length / step)), ys = new Float32Array(xs.length);
+    let n = 0; for (let j = 0; j < pts.length; j += step) { xs[n] = (pts[j] % img.w + 0.5) / k; ys[n] = (Math.floor(pts[j] / img.w) + 0.5) / k; n++; }
+    return { xs: xs.subarray(0, n), ys: ys.subarray(0, n), n, total: pts.length };
+  };
+  // crop: optional [x0,y0,x1,y1] in overlay points
+  E.overlapScore = function (base, ov, T, crop) {
+    const { w, h, k, mask } = base; const tbx = w * 0.9;
+    let hit = 0, cnt = 0;
+    const c = Math.cos(T.rot || 0), s_ = Math.sin(T.rot || 0);
+    for (let i = 0; i < ov.n; i++) {
+      const x = ov.xs[i], y = ov.ys[i];
+      if (crop && (x < crop[0] || x > crop[2] || y < crop[1] || y > crop[3])) continue;
+      const bx = k * (T.s * (c * x - s_ * y) + T.tx), by = k * (T.s * (s_ * x + c * y) + T.ty);
+      if (bx < 0 || by < 0 || bx >= tbx || by >= h) continue;
+      cnt++;
+      if (mask[(by | 0) * w + (bx | 0)]) hit++;
+    }
+    return { score: cnt ? hit / cnt : 0, n: cnt };
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = E;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// Orchestration: analyse sheets (cached), solve, tie-break with overlap, confidence.
+(function (root) {
+  const E = root.OverlayEngine || (root.OverlayEngine = {});
+
+  E.analyzeSheet = async function (pdfjsLib, doc, pn, cache) {
+    cache = cache || {};
+    if (cache[pn] && cache[pn].grid) return cache[pn];
+    const t0 = performance.now();
+    const page = await doc.getPage(pn);
+    let ocConfig = null; try { ocConfig = await doc.getOptionalContentConfig(); } catch (e) { }
+    const X = await E.extractPage(pdfjsLib, page, { ocConfig });
+    const C = E.findCircles(X);
+    for (const r of E.findTextRings(X, C)) C.push(r);
+    E.labelBubbles(C, X.text);
+    const idx = E.buildSegIndex(X);
+    // optional grid layer: prefer it, never require it
+    const gridOcg = new Set(); X.ocgList.forEach((n, i) => { if (/(^|[-_ |])GRID/i.test(n)) gridOcg.add(i); });
+    let layerUsed = false;
+    const trace = (b, ax) => {
+      let t = null;
+      if (gridOcg.size) { t = E.traceGridLine(b, ax, idx, { gridOcg }); if (t) { t.layer = true; layerUsed = true; } }
+      return t || E.traceGridLine(b, ax, idx, {});
+    };
+    const G = E.findGridGroups(C, { trace });
+    const lines = E.gridLines(G);
+    const res = {
+      pn, W: X.W, H: X.H, rotate: X.rotate, view: X.view, grid: lines, rawGroups: G, layerUsed,
+      gridLayers: [...gridOcg].map(i => X.ocgList[i]), idx, circles: C, ms: Math.round(performance.now() - t0)
+    };
+    cache[pn] = Object.assign(cache[pn] || {}, res);
+    return cache[pn];
+  };
+
+  function same(a, b) { return Math.abs(a.s / b.s - 1) < 0.002 && Math.abs(a.tx - b.tx) < 3 && Math.abs(a.ty - b.ty) < 3; }
+
+  E.autoAlign = async function (pdfjsLib, doc, basePn, ovPn, cache, opts) {
+    opts = opts || {};
+    const B = await E.analyzeSheet(pdfjsLib, doc, basePn, cache);
+    const O = await E.analyzeSheet(pdfjsLib, doc, ovPn, cache);
+    const r = E.solveGrids(B.grid, O.grid, opts);
+    const full = r.hyps.filter(h => !h.partial);
+    const out = { base: B, ov: O, hyps: r.hyps };
+    if (!full.length) {
+      out.ok = false;
+      out.reason = (!B.grid.cols.length && !B.grid.rows.length) ? 'No grid bubbles found on the base sheet' :
+        (!O.grid.cols.length && !O.grid.rows.length) ? 'No grid bubbles found on the overlay sheet' : 'Grid lines could not be matched on both axes';
+      out.confidence = { level: 'none', value: 0, notes: [out.reason] };
+      return out;
+    }
+    full.sort((a, b) => b.score - a.score);
+    let top = full[0];
+    const rivals = full.filter((h, i) => i > 0 && !same(h, top) && h.score >= top.score - 3.5).slice(0, 4);
+    let usedOverlap = false;
+    if (rivals.length && typeof document !== 'undefined' && opts.overlap !== false) {
+      const k = 1.0;
+      const bc = cache[basePn], oc = cache[ovPn];
+      const bPage = await doc.getPage(basePn), oPage = await doc.getPage(ovPn);
+      if (!bc.ink) bc.ink = await E.baseInk(bPage, k);
+      const ks = Math.max(0.25, Math.min(2, k * top.s));
+      const key = 'ovInk_' + ks.toFixed(2);
+      if (!oc[key]) oc[key] = await E.overlayInk(oPage, ks);
+      for (const h of [top].concat(rivals)) h.overlap = E.overlapScore(bc.ink, oc[key], h).score;
+      const cands = [top].concat(rivals).filter(h => h.score >= top.score - 2.0);
+      const bestOv = cands.slice().sort((a, b) => b.overlap - a.overlap)[0];
+      if (bestOv !== top && bestOv.overlap > top.overlap + 0.02) top = bestOv;
+      usedOverlap = true;
+    }
+    const runner = full.find(h => !same(h, top));
+    out.ok = true; out.best = top; out.runner = runner || null; out.usedOverlap = usedOverlap;
+    out.confidence = E.confidence(top, runner, usedOverlap, B, O);
+    return out;
+  };
+
+  E.confidence = function (top, runner, usedOverlap, B, O) {
+    const notes = [];
+    const n = top.nx + top.ny;
+    let v = Math.min(40, 5 * n);
+    notes.push(`${top.nx} column + ${top.ny} row grid lines matched`);
+    if (top.agree) notes.push(`${top.agree} label${top.agree > 1 ? 's' : ''} agree` + (top.conflict ? `, ${top.conflict} disagree` : ''));
+    else notes.push('labels not readable on one sheet; matched by spacing');
+    const margin = runner ? top.score - runner.score : 10;
+    v += Math.max(0, Math.min(30, 7 * margin));
+    notes.push(!runner ? 'no competing fit' : margin >= 0 ? `next-best fit trails by ${margin.toFixed(1)}` : 'chosen over a higher-scoring fit by drawing overlap');
+    v += top.rms < 0.5 ? 20 : top.rms < 1.5 ? 12 : 4;
+    notes.push(`fit residual ${top.rms.toFixed(2)} pt`);
+    if (Math.min(top.nx, top.ny) < 2) { v -= 12; notes.push(`only ${Math.min(top.nx, top.ny)} line on one axis`); }
+    if (usedOverlap && top.overlap != null) {
+      const ro = runner && runner.overlap != null ? runner.overlap : null;
+      notes.push(`drawing overlap ${(100 * top.overlap).toFixed(0)}%` + (ro != null ? ` vs ${(100 * ro).toFixed(0)}% for next fit` : ''));
+      if (ro != null && top.overlap - ro > 0.05) v += 10;
+      if (ro != null && top.overlap - ro < 0.01) v -= 15;
+    }
+    if (top.nice === false) { v -= 25; notes.push(`scale ×${top.s.toFixed(4)} is not a standard drawing-scale ratio`); }
+    if (!top.agree && (top.nx + top.ny < 5 || Math.min(top.nx, top.ny) < 2 || top.nice === false || top.rms > 0.5)) { v = Math.min(v, 45); notes.push('few lines and no readable labels to confirm the match'); }
+    if (top.conflict > top.agree) { v = Math.min(v, 45); notes.push('more grid labels disagree than agree'); }
+    for (const [G, nm] of [[B && B.rawGroups, 'base'], [O && O.rawGroups, 'overlay']]) {
+      if (G && (G.tracedCols + G.tracedRows) === 0) { v -= 15; notes.push(`no grid lines traced from the bubbles on the ${nm} sheet`); }
+    }
+    v = Math.max(0, Math.min(100, Math.round(v)));
+    const level = v >= 75 ? 'high' : v >= 50 ? 'medium' : 'low';
+    if (level === 'low') notes.push('Check the fit by eye, or use two-point align');
+    return { value: v, level, notes };
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = E;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// Sheet bookmarks: sheet number + name from title blocks and the sheet index.
+(function (root) {
+  const E = root.OverlayEngine || (root.OverlayEngine = {});
+  const SHEET_RE = /^[A-Z]{1,3}[-.]?\d{1,3}(?:[.-]\d{1,3}){0,2}[A-Z]?$/;
+  E.SHEET_RE = SHEET_RE;
+  const norm = s => s.replace(/\s+/g, '').toUpperCase();
+
+  E.pageText = async function (page) {
+    const vp = page.getViewport({ scale: 1 });
+    const VT = vp.transform;
+    const tc = await page.getTextContent();
+    const items = [];
+    for (const it of tc.items) {
+      if (!it.str || !it.str.trim()) continue;
+      const t = it.transform;
+      const m = [VT[0] * t[0] + VT[2] * t[1], VT[1] * t[0] + VT[3] * t[1], VT[0] * t[2] + VT[2] * t[3], VT[1] * t[2] + VT[3] * t[3], VT[0] * t[4] + VT[2] * t[5] + VT[4], VT[1] * t[4] + VT[3] * t[5] + VT[5]];
+      const h = Math.hypot(m[2], m[3]); const dl = Math.hypot(m[0], m[1]) || 1;
+      const ux = m[0] / dl, uy = m[1] / dl;
+      const upright = Math.abs(uy) < 0.05 && ux > 0;
+      const w = it.width; // already in page units along baseline
+      const x0 = m[4], yb = m[5];
+      items.push({ s: it.str.trim(), x0, x1: x0 + ux * w, y: yb, top: yb - h * 0.8, h, upright, cy: yb - h * 0.35, cx: x0 + ux * w / 2 });
+    }
+    return { W: vp.width, H: vp.height, view: page.view.slice(), rotate: page.rotate, items };
+  };
+
+  // garbage detection for custom-encoded fonts
+  function readable(s) { const a = s.replace(/[^\x20-\x7E]/g, ''); return a.length >= 0.8 * s.length && /[A-Za-z0-9]/.test(s); }
+
+  E.titleBlockNumber = function (T) {
+    const { W, H, items } = T;
+    let best = null;
+    for (const it of items) {
+      if (!it.upright) continue;
+      const s = norm(it.s);
+      if (!SHEET_RE.test(s)) continue;
+      const inTB = it.cx > W * 0.78 || it.cy > H * 0.86;
+      if (!inTB) continue;
+      const corner = (it.cx / W) + (it.cy / H); // bottom-right preference
+      const sc = it.h * (1 + 0.3 * corner);
+      if (!best || sc > best.sc) best = { sc, it, num: s };
+    }
+    return best && best.it.h >= 7 ? best : null;
+  };
+
+  const LABEL_RE = /:|^(SHEET|SHEET\s*(NO|NUMBER|TITLE)\.?|JOB|PROJECT|DATE|PLOT|SCALE|DRAWN|CHECKED|REVISIONS?|ISSUE|NO\.?|DESCRIPTION|BY|APPROVED|TITLE)$/i;
+  E.titleBlockName = function (T, sn) {
+    const it0 = sn.it; const L = it0.x0 - 80, R = it0.x1 + 80;
+    const fileLike = s => /^[a-z0-9 .\-_&]+$/.test(s) && /[a-z]/.test(s) || /^\d{3,}[-_]/.test(s) || /\.(dwg|rvt|pdf)$/i.test(s) || !/[A-Za-z]{3}/.test(s);
+    const cands = T.items.filter(t => t.upright && t !== it0 && t.h >= 5 && !fileLike(t.s) && t.x1 > L && t.x0 < R && t.y < it0.top && it0.top - t.y < 140 && readable(t.s) && !LABEL_RE.test(t.s.trim()) && !/\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}/.test(t.s) && !SHEET_RE.test(norm(t.s)));
+    if (!cands.length) return null;
+    cands.sort((a, b) => b.y - a.y);
+    // nearest line, then lines directly above it that are part of the same title (similar height, close)
+    const lines = []; let lastY = null, lastH = null;
+    for (const c of cands) {
+      if (lastY === null) { lines.push([c]); lastY = c.y; lastH = c.h; continue; }
+      if (Math.abs(c.y - lastY) < 0.5 * lastH) { lines[lines.length - 1].push(c); continue; }
+      if (lastY - c.y < 1.9 * lastH && Math.abs(c.h - lastH) < 0.25 * lastH && lines.length < 3) { lines.push([c]); lastY = c.y; continue; }
+      break;
+    }
+    const txt = lines.reverse().map(l => l.sort((a, b) => a.x0 - b.x0).map(t => t.s).join(' ')).join(' ').replace(/\s+/g, ' ').trim();
+    return txt.length >= 3 && txt.length < 80 ? txt : null;
+  };
+
+  // Sheet index: a column of sheet numbers with names to their right.
+  E.parseIndex = function (T) {
+    const rows = [];
+    const up = T.items.filter(t => t.upright);
+    for (const it of up) {
+      const s = norm(it.s);
+      if (!SHEET_RE.test(s)) continue;
+      const right = up.filter(t => t !== it && t.x0 > it.x1 - 1 && t.x0 - it.x1 < 420 && Math.abs(t.y - it.y) < 0.45 * it.h).sort((a, b) => a.x0 - b.x0);
+      const parts = [];
+      let lastX = it.x1;
+      for (const r of right) {
+        if (SHEET_RE.test(norm(r.s))) break;
+        if (r.x0 - lastX > Math.max(120, 12 * it.h)) break;
+        parts.push(r.s); lastX = r.x1;
+      }
+      let name = parts.join(' ').replace(/\s+/g, ' ').trim();
+      name = name.replace(/\s+[X✓●•]+$/, '').trim();
+      if (name.length < 3 || !/[A-Za-z]{2}/.test(name) || !readable(name)) continue;
+      rows.push({ num: s, name, x: it.x0, y: it.y, h: it.h });
+    }
+    // keep rows in columns of >= 5 aligned entries
+    const cols = [];
+    for (const r of rows) { let c = cols.find(c => Math.abs(c.x - r.x) < 4); if (!c) cols.push(c = { x: r.x, rows: [] }); c.rows.push(r); }
+    const map = {};
+    for (const c of cols) if (c.rows.length >= 5) for (const r of c.rows) if (!map[r.num]) map[r.num] = r.name;
+    return map;
+  };
+
+  // Build bookmarks for all pages; onProgress(list) called as pages are processed.
+  E.buildBookmarks = async function (doc, onProgress, opts) {
+    opts = opts || {};
+    const n = doc.numPages;
+    const list = [];
+    for (let i = 1; i <= n; i++) list.push({ pn: i, num: null, name: null, src: 'page' });
+    // existing outline as a fallback
+    try {
+      const ol = await doc.getOutline();
+      if (ol) {
+        const walk = async (items, depth) => { for (const o of items) { try { let d = o.dest; if (typeof d === 'string') d = await doc.getDestination(d); if (d && d[0]) { const idx = await doc.getPageIndex(d[0]); const b = list[idx]; if (b && (!b.outline || depth > b.olDepth)) { b.outline = o.title; b.olDepth = depth; } } } catch (e) { } if (o.items && o.items.length) await walk(o.items, depth + 1); } };
+        await walk(ol, 0);
+      }
+    } catch (e) { }
+    const index = {};
+    const texts = [];
+    for (let i = 1; i <= n; i++) {
+      if (opts.cancelled && opts.cancelled()) return list;
+      const page = await doc.getPage(i);
+      let T; try { T = await E.pageText(page); } catch (e) { T = { W: 1, H: 1, items: [] }; }
+      const sn = E.titleBlockNumber(T);
+      const b = list[i - 1];
+      b.W = T.W; b.H = T.H; b.view = T.view; b.rotate = T.rotate;
+      if (sn) { b.tbNum = sn.num; b.tbName = E.titleBlockName(T, sn); }
+      Object.assign(index, Object.assign(E.parseIndex(T), index));
+      E.resolveNames(list, index);
+      if (onProgress && (i % 4 === 0 || i === n)) onProgress(list, i, n);
+    }
+    return list;
+  };
+
+  const OL_RE = /^([A-Z]{1,3}[-.]?\d{1,3}(?:[.-]\d{1,3}){0,2}[A-Z]?)(?:\s*[-\u2013:]\s*|\s+)(.+)$/;
+  E.resolveNames = function (list, index) {
+    for (const b of list) {
+      if (b.userEdited) continue;
+      let olNum = null, olName = b.outline ? b.outline.trim() : null;
+      if (olName) { const m = olName.match(OL_RE); if (m) { olNum = norm(m[1]); olName = m[2].trim(); } }
+      const num = b.tbNum || olNum || null;
+      b.num = num;
+      if (num && index[num]) { b.name = index[num]; b.src = 'index'; }
+      else if (olName && (olNum || b.outline)) { b.name = olName; b.src = 'outline'; }
+      else if (b.tbName) { b.name = b.tbName; b.src = 'titleblock'; }
+      else { b.name = null; b.src = num ? 'titleblock' : 'page'; }
+    }
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = E;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// Bluebeam-compatible export with pdf-lib: base sheet copied unchanged, each overlay = /Stamp markup
+// whose appearance colourises the overlay page (Multiply + Lighten), fully vector.
+(function (root) {
+  const E = root.OverlayEngine || (root.OverlayEngine = {});
+  const mul = (m, n) => [m[0] * n[0] + m[2] * n[1], m[1] * n[0] + m[3] * n[1], m[0] * n[2] + m[2] * n[3], m[1] * n[2] + m[3] * n[3], m[0] * n[4] + m[2] * n[5] + m[4], m[1] * n[4] + m[3] * n[5] + m[5]];
+  const ap = (m, x, y) => [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
+  const inv = (m) => { const d = m[0] * m[3] - m[1] * m[2]; return [m[3] / d, -m[1] / d, -m[2] / d, m[0] / d, (m[2] * m[5] - m[3] * m[4]) / d, (m[1] * m[4] - m[0] * m[5]) / d]; };
+  const n3 = (v) => { const r = Math.round(v * 1e5) / 1e5; return (Object.is(r, -0) ? 0 : r).toString(); };
+
+  // pdf.js-compatible viewport transform (scale 1): native -> display(top-left)
+  E.viewTransform = function (view, rotate) {
+    const [x0, y0, x1, y1] = view; const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    rotate = ((rotate % 360) + 360) % 360;
+    let A, B, C, D;
+    switch (rotate) { case 180: A = -1; B = 0; C = 0; D = 1; break; case 90: A = 0; B = 1; C = 1; D = 0; break; case 270: A = 0; B = -1; C = -1; D = 0; break; default: A = 1; B = 0; C = 0; D = -1; }
+    let ox, oy, w, h;
+    if (A === 0) { ox = Math.abs(cy - y0); oy = Math.abs(cx - x0); w = y1 - y0; h = x1 - x0; }
+    else { ox = Math.abs(cx - x0); oy = Math.abs(cy - y0); w = x1 - x0; h = y1 - y0; }
+    return { T: [A, B, C, D, ox - A * cx - C * cy, oy - B * cx - D * cy], w, h };
+  };
+  // alignment transform: overlay display -> base display
+  E.alignMatrix = function (o) {
+    const c = Math.cos(o.rot || 0), s = Math.sin(o.rot || 0);
+    return [o.s * c, o.s * s, -o.s * s, o.s * c, o.tx, o.ty];
+  };
+
+  function esc(s) { return String(s).replace(/[\\()]/g, m => '\\' + m).replace(/[^\x20-\x7e]/g, '?'); }
+
+  // Compute geometry for one overlay stamp. Returns null if the footprint misses the base page.
+  E.stampGeometry = function (baseVT, baseW, baseH, ovVT, ovW, ovH, o) {
+    const A = E.alignMatrix(o);
+    const crop = o.crop || [0, 0, ovW, ovH];
+    const corners = [[crop[0], crop[1]], [crop[2], crop[1]], [crop[2], crop[3]], [crop[0], crop[3]]].map(p => ap(A, p[0], p[1]));
+    let x0 = Math.max(0, Math.min(...corners.map(p => p[0]))), x1 = Math.min(baseW, Math.max(...corners.map(p => p[0])));
+    let y0 = Math.max(0, Math.min(...corners.map(p => p[1]))), y1 = Math.min(baseH, Math.max(...corners.map(p => p[1])));
+    if (x1 - x0 < 1 || y1 - y0 < 1) return null;
+    const bInv = inv(baseVT);
+    const nat = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(p => ap(bInv, p[0], p[1]));
+    const rect = [Math.min(...nat.map(p => p[0])), Math.min(...nat.map(p => p[1])), Math.max(...nat.map(p => p[0])), Math.max(...nat.map(p => p[1]))];
+    const w = rect[2] - rect[0], h = rect[3] - rect[1];
+    const toForm = mul([1, 0, 0, 1, -rect[0], -rect[1]], bInv); // base display -> form
+    const M = mul(toForm, mul(A, ovVT)); // overlay native -> form
+    const clipPoly = (o.crop || o.rot) ? corners.map(p => ap(toForm, p[0], p[1])) : null;
+    return { rect, w, h, M, clipPoly, displayBox: [x0, y0, x1, y1] };
+  };
+
+  E.stampContent = function (g, color) {
+    const W = n3(g.w), H = n3(g.h);
+    const M = g.M.map(n3).join(' ');
+    let clip = '';
+    if (g.clipPoly) clip = g.clipPoly.map((p, i) => `${n3(p[0])} ${n3(p[1])} ${i ? 'l' : 'm'}`).join(' ') + ' h W n ';
+    return `q 1 g 0 0 ${W} ${H} re f Q q ${clip}${M} cm /Ov Do Q q /GL gs ${n3(color[0])} ${n3(color[1])} ${n3(color[2])} rg 0 0 ${W} ${H} re f Q`;
+  };
+
+  function pdfDate(d) {
+    const p = (n) => String(n).padStart(2, '0');
+    const off = -d.getTimezoneOffset(); const sg = off >= 0 ? '+' : '-'; const ao = Math.abs(off);
+    return `D:${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}${sg}${p(Math.floor(ao / 60))}'${p(ao % 60)}'`;
+  }
+  function uid() { return 'ov-' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
+
+  // ---- markups (cloud / arrow / text), geometry given in base display coords ----
+  function cloudPath(pts, r) { // scallops along each edge of polygon (in form/native coords)
+    let s = '';
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length];
+      const L = Math.hypot(b[0] - a[0], b[1] - a[1]); const n = Math.max(1, Math.round(L / (2 * r)));
+      for (let k = 0; k < n; k++) {
+        const p0 = [a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n], p1 = [a[0] + (b[0] - a[0]) * (k + 1) / n, a[1] + (b[1] - a[1]) * (k + 1) / n];
+        const mx = (p0[0] + p1[0]) / 2, my = (p0[1] + p1[1]) / 2; const dx = p1[0] - p0[0], dy = p1[1] - p0[1];
+        // bulge outward: polygon assumed CCW in native coords -> outward normal (dy,-dx)
+        const nl = Math.hypot(dx, dy) || 1; const bx = dy / nl, by = -dx / nl; const hgt = 0.66 * nl;
+        if (i === 0 && k === 0) s += `${n3(p0[0])} ${n3(p0[1])} m\n`;
+        s += `${n3(p0[0] + bx * hgt)} ${n3(p0[1] + by * hgt)} ${n3(p1[0] + bx * hgt)} ${n3(p1[1] + by * hgt)} ${n3(p1[0])} ${n3(p1[1])} c\n`;
+      }
+    }
+    return s + 'S\n';
+  }
+  function signedArea(p) { let a = 0; for (let i = 0; i < p.length; i++) { const q = p[(i + 1) % p.length]; a += p[i][0] * q[1] - q[0] * p[i][1]; } return a / 2; }
+
+  function addMarkups(PDFLib, out, page, baseVT, markups, author, now) {
+    const { PDFName, PDFString, PDFHexString, PDFNumber } = PDFLib;
+    const ctx = out.context; const bInv = inv(baseVT);
+    const refs = [];
+    for (const mk of markups) {
+      const col = mk.color || [0.85, 0.1, 0.1];
+      const C = col.map(n3).join(' ');
+      const lw = mk.width || 2;
+      let dict;
+      if (mk.type === 'cloud') {
+        let pts = mk.points.map(p => ap(bInv, p[0], p[1]));
+        if (signedArea(pts) < 0) pts = pts.slice().reverse();
+        const r = 6; const pad = r * 1.5 + lw;
+        const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+        const rect = [Math.min(...xs) - pad, Math.min(...ys) - pad, Math.max(...xs) + pad, Math.max(...ys) + pad];
+        const apS = ctx.stream(`q\n${n3(lw)} w\n${C} RG\n1 j\n${cloudPath(pts, r)}Q\n`, { Type: 'XObject', Subtype: 'Form', BBox: rect, Matrix: [1, 0, 0, 1, 0, 0] });
+        dict = { Type: 'Annot', Subtype: 'Polygon', Rect: rect, Vertices: pts.flat(), C: col, BS: { S: 'S', W: lw }, BE: { S: 'C', I: 2 }, RD: [pad, pad, pad, pad], Subj: 'Cloud', IT: 'PolygonCloud', AP: { N: ctx.register(apS) } };
+      } else if (mk.type === 'arrow') {
+        const a = ap(bInv, mk.points[0][0], mk.points[0][1]), b = ap(bInv, mk.points[1][0], mk.points[1][1]);
+        const ang = Math.atan2(a[1] - b[1], a[0] - b[0]); const hl = 10 + 2 * lw, ha = 0.45;
+        const h1 = [b[0] + hl * Math.cos(ang + ha), b[1] + hl * Math.sin(ang + ha)], h2 = [b[0] + hl * Math.cos(ang - ha), b[1] + hl * Math.sin(ang - ha)];
+        const xs = [a[0], b[0], h1[0], h2[0]], ys = [a[1], b[1], h1[1], h2[1]]; const pad = lw + 2;
+        const rect = [Math.min(...xs) - pad, Math.min(...ys) - pad, Math.max(...xs) + pad, Math.max(...ys) + pad];
+        const apS = ctx.stream(`${n3(lw)} w\n${C} RG\n1 J 1 j\n${n3(a[0])} ${n3(a[1])} m ${n3(b[0])} ${n3(b[1])} l S\n${n3(h1[0])} ${n3(h1[1])} m ${n3(b[0])} ${n3(b[1])} l ${n3(h2[0])} ${n3(h2[1])} l S\n`, { Type: 'XObject', Subtype: 'Form', BBox: rect, Matrix: [1, 0, 0, 1, 0, 0] });
+        dict = { Type: 'Annot', Subtype: 'Line', Rect: rect, L: [a[0], a[1], b[0], b[1]], LE: ['None', 'OpenArrow'], C: col, BS: { S: 'S', W: lw }, Subj: 'Arrow', IT: 'LineArrow', AP: { N: ctx.register(apS) } };
+      } else if (mk.type === 'text') {
+        const [x0d, y0d, x1d, y1d] = mk.box; // display coords
+        const p0 = ap(bInv, x0d, y0d), p1 = ap(bInv, x1d, y1d);
+        const rect = [Math.min(p0[0], p1[0]), Math.min(p0[1], p1[1]), Math.max(p0[0], p1[0]), Math.max(p0[1], p1[1])];
+        const w = rect[2] - rect[0], h = rect[3] - rect[1];
+        const fs = mk.size || 9; const hex = '#' + col.map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join('').toUpperCase();
+        // naive wrap for the appearance (Revu re-flows using /RC and /DS)
+        const font = mk._font; const lines = [];
+        for (const para of String(mk.text).split(/\n/)) {
+          let cur = '';
+          for (const word of para.split(/\s+/)) { const t = cur ? cur + ' ' + word : word; if (font && font.widthOfTextAtSize(t, fs) > w - 4 && cur) { lines.push(cur); cur = word; } else cur = t; }
+          lines.push(cur);
+        }
+        let body = `${C} RG\n1 w\n${n3(rect[0] + 0.5)} ${n3(rect[1] + 0.5)} ${n3(w - 1)} ${n3(h - 1)} re S\nq ${n3(rect[0] + 1)} ${n3(rect[1] + 1)} ${n3(w - 2)} ${n3(h - 2)} re W n\nBT\n${C} rg\n/Helv ${fs} Tf\n${n3(rect[0] + 2)} ${n3(rect[3] - fs * 1.2)} Td\n`;
+        lines.forEach((l, i) => { body += (i ? `0 ${n3(-fs * 1.2)} Td\n` : '') + `(${esc(l)}) Tj\n`; });
+        body += 'ET\nQ\n';
+        const helv = ctx.obj({ Type: 'Font', Subtype: 'Type1', BaseFont: 'Helvetica', Encoding: 'WinAnsiEncoding' });
+        const apS = ctx.stream(body, { Type: 'XObject', Subtype: 'Form', BBox: rect, Matrix: [1, 0, 0, 1, 0, 0], Resources: { Font: { Helv: ctx.register(helv) } } });
+        const xmlEsc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const rc = `<?xml version="1.0"?><body xmlns="http://www.w3.org/1999/xhtml" xmlns:xfa="http://www.xfa.org/schema/xfa-data/1.0/" xfa:APIVersion="Acrobat:11.0.0" xfa:spec="2.0.2" style="font-size:${fs}pt;text-align:left;color:${hex};font-weight:normal;font-style:normal;font-family:'Arial Narrow';font-stretch:normal"><p dir="ltr"><span style="font-family:'Arial Narrow'">${xmlEsc(mk.text).replace(/\n/g, '</span></p><p dir="ltr"><span style="font-family:\'Arial Narrow\'">')}</span></p></body>`;
+        dict = { Type: 'Annot', Subtype: 'FreeText', Rect: rect, DA: PDFString.of(`${C} rg /Helv ${fs} Tf`), DS: PDFString.of(`font: ${fs}pt 'Arial Narrow'; text-align:left; color:${hex}`), RC: PDFHexString.fromText(rc), Q: 0, BS: { S: 'S', W: 1 }, C: col, Subj: 'Text Box', AP: { N: ctx.register(apS) } };
+      } else continue;
+      dict.T = PDFHexString.fromText(author); dict.F = 4; dict.NM = PDFString.of(uid()); dict.M = PDFString.of(now); dict.CreationDate = PDFString.of(now); dict.P = page.ref;
+      if (mk.text && mk.type !== 'text') dict.Contents = PDFHexString.fromText(mk.text);
+      if (mk.type === 'text') dict.Contents = PDFHexString.fromText(mk.text);
+      if (mk.type !== 'text' && dict.Subj) dict.Subj = PDFString.of(dict.Subj); else dict.Subj = PDFString.of(dict.Subj);
+      refs.push(ctx.register(ctx.obj(dict)));
+    }
+    return refs;
+  }
+
+  // Add overlay stamps and markups to one copied page of `out`.
+  async function decorate(PDFLib, out, src, page, sh, author, now, fontCache) {
+    const { PDFName, PDFString, PDFHexString, PDFArray, PDFDict } = PDFLib;
+    const ctx = out.context;
+    const bv = E.viewTransform(sh.view, sh.rotate || 0);
+    const stampRefs = [];
+    for (const o of (sh.overlays || [])) {
+      const ov = E.viewTransform(o.view, o.rotate || 0);
+      const g = E.stampGeometry(bv.T, bv.w, bv.h, ov.T, ov.w, ov.h, o);
+      if (!g) continue;
+      const srcPage = src.getPage(o.pn - 1);
+      const [vx0, vy0, vx1, vy1] = o.view;
+      const emb = await out.embedPage(srcPage, { left: vx0, bottom: vy0, right: vx1, top: vy1 }, [1, 0, 0, 1, 0, 0]);
+      const op = Math.max(0, Math.min(1, o.opacity == null ? 0.7 : o.opacity));
+      const GL = ctx.obj({ Type: 'ExtGState', BM: 'Lighten' });
+      const GM = ctx.obj({ Type: 'ExtGState', BM: 'Multiply', CA: op, ca: op });
+      const Gref = ctx.register(ctx.flateStream(E.stampContent(g, o.color || [0.1, 0.35, 0.9]), {
+        Type: 'XObject', Subtype: 'Form', BBox: [0, 0, g.w, g.h],
+        Group: { S: 'Transparency', I: true, K: false, CS: 'DeviceRGB' },
+        Resources: { ExtGState: { GL: ctx.register(GL) }, XObject: { Ov: emb.ref } }
+      }));
+      const Nref = ctx.register(ctx.flateStream('q /GM gs /G Do Q', {
+        Type: 'XObject', Subtype: 'Form', BBox: [0, 0, g.w, g.h],
+        Resources: { ExtGState: { GM: ctx.register(GM) }, XObject: { G: Gref } }
+      }));
+      stampRefs.push(ctx.register(ctx.obj({
+        Type: 'Annot', Subtype: 'Stamp', Rect: g.rect, Name: 'Draft',
+        T: PDFHexString.fromText(author), Subj: PDFString.of('Overlay'),
+        Contents: PDFHexString.fromText(`Overlay: ${o.name || ('page ' + o.pn)} on ${sh.name || ('page ' + sh.pn)}`),
+        F: 4, CA: op, NM: PDFString.of(uid()), M: PDFString.of(now), CreationDate: PDFString.of(now),
+        AP: { N: Nref }, P: page.ref
+      })));
+    }
+    let markupRefs = [];
+    if (sh.markups && sh.markups.length) {
+      if (!fontCache.helv) fontCache.helv = await out.embedFont(PDFLib.StandardFonts.Helvetica);
+      for (const m of sh.markups) m._font = fontCache.helv;
+      markupRefs = addMarkups(PDFLib, out, page, bv.T, sh.markups, author, now);
+    }
+    const annots = page.node.lookup(PDFName.of('Annots'));
+    const existing = [];
+    if (annots instanceof PDFArray) for (let i = 0; i < annots.size(); i++) existing.push(annots.get(i));
+    // copied markups keep pointing at the source page object; point them at their new page
+    for (const r of existing) { try { const d = ctx.lookup(r); if (d instanceof PDFDict && d.lookup(PDFName.of('Subtype'))) d.set(PDFName.of('P'), page.ref); } catch (e) { } }
+    if (!stampRefs.length && !markupRefs.length) return;
+    const arr = ctx.obj([]);
+    for (const r of stampRefs) arr.push(r);   // overlays first: beneath every other markup
+    for (const r of existing) arr.push(r);
+    for (const r of markupRefs) arr.push(r);
+    page.node.set(PDFName.of('Annots'), arr);
+  }
+
+  function addOutline(PDFLib, out, pages, titles) {
+    const { PDFName, PDFHexString, PDFNumber } = PDFLib;
+    const ctx = out.context;
+    const rootRef = ctx.nextRef();
+    const refs = pages.map(() => ctx.nextRef());
+    pages.forEach((pg, i) => {
+      const d = { Title: PDFHexString.fromText(titles[i]), Parent: rootRef, Dest: [pg.ref, 'Fit'] };
+      if (i > 0) d.Prev = refs[i - 1];
+      if (i < pages.length - 1) d.Next = refs[i + 1];
+      ctx.assign(refs[i], ctx.obj(d));
+    });
+    ctx.assign(rootRef, ctx.obj({ Type: 'Outlines', First: refs[0], Last: refs[refs.length - 1], Count: refs.length }));
+    out.catalog.set(PDFName.of('Outlines'), rootRef);
+    out.catalog.set(PDFName.of('PageMode'), PDFName.of('UseOutlines'));
+  }
+
+  // Some stapled sets carry malformed entries in /Annots (e.g. a /Page dict whose /Parent is an annotation).
+  // pdf-lib crashes copying those ("ascend is not a function"), so drop anything that is not an annotation,
+  // and detach /P so copying a page never drags other page objects along.
+  function sanitizeAnnots(PDFLib, src, pn) {
+    const { PDFName, PDFArray, PDFDict } = PDFLib;
+    const node = src.getPage(pn - 1).node;
+    const annots = node.lookup(PDFName.of('Annots'));
+    if (!(annots instanceof PDFArray)) { if (annots) node.delete(PDFName.of('Annots')); return; }
+    const keep = [];
+    for (let i = 0; i < annots.size(); i++) {
+      const ref = annots.get(i); let d = null;
+      try { d = src.context.lookup(ref); } catch (e) { d = null; }
+      if (!(d instanceof PDFDict)) continue;
+      const type = d.lookup(PDFName.of('Type')); const sub = d.lookup(PDFName.of('Subtype'));
+      if (type && type.asString && type.asString() !== '/Annot') continue;
+      if (!sub) continue;
+      d.delete(PDFName.of('P'));
+      keep.push(ref);
+    }
+    node.set(PDFName.of('Annots'), src.context.obj(keep));
+  }
+  let patched = false;
+  function patchPdfLib(PDFLib) {
+    if (patched || !PDFLib.PDFPageLeaf) return; patched = true;
+    const { PDFName, PDFDict } = PDFLib;
+    PDFLib.PDFPageLeaf.prototype.ascend = function (visitor) {
+      visitor(this);
+      let par = this.lookupMaybe ? this.lookupMaybe(PDFName.of('Parent'), PDFDict) : null, guard = 0;
+      while (par && guard++ < 64) {
+        if (typeof par.ascend === 'function' && par !== this) { par.ascend(visitor); return; }
+        visitor(par); const nx = par.lookup(PDFName.of('Parent')); par = nx instanceof PDFDict ? nx : null;
+      }
+    };
+  }
+
+  // sheets: [{pn, view, rotate, name, title, overlays:[...], markups:[...]}]
+  E.buildPDF = async function (PDFLib, src, sheets, opts) {
+    opts = opts || {};
+    const author = opts.author || 'karll';
+    const out = await PDFLib.PDFDocument.create({ updateMetadata: false });
+    const now = pdfDate(new Date());
+    patchPdfLib(PDFLib);
+    for (const sh of sheets) sanitizeAnnots(PDFLib, src, sh.pn);
+    const pages = await out.copyPages(src, sheets.map(s => s.pn - 1));
+    const fontCache = {};
+    for (let i = 0; i < pages.length; i++) {
+      out.addPage(pages[i]);
+      await decorate(PDFLib, out, src, pages[i], sheets[i], author, now, fontCache);
+      if (opts.onProgress) await opts.onProgress(i + 1, pages.length);
+    }
+    if (pages.length > 1) addOutline(PDFLib, out, pages, sheets.map(s => s.title || s.name || ('Page ' + s.pn)));
+    out.setTitle(opts.title || (sheets.length === 1 ? `${sheets[0].name || 'Sheet'} overlay` : 'Overlay set'));
+    out.setCreator('Sheet Overlay'); out.setProducer('pdf-lib');
+    return await out.save({ useObjectStreams: false });
+  };
+
+  // legacy single-sheet entry point
+  E.exportPDF = async function (PDFLib, opts) {
+    const src = opts.srcDoc || await PDFLib.PDFDocument.load(opts.srcBytes, { ignoreEncryption: true, updateMetadata: false });
+    return E.buildPDF(PDFLib, src, [{ pn: opts.basePn, view: opts.baseView, rotate: opts.baseRotate, name: opts.baseName, overlays: opts.overlays, markups: opts.markups }], { author: opts.author, title: opts.title });
+  };
+
+  // ---- minimal ZIP (stored, no compression; PDFs are already compressed) ----
+  const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  function crc32(b) { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+  E.zipStore = function (files) {
+    const enc = new TextEncoder(); const parts = []; const central = []; let off = 0;
+    const d = new Date(); const dt = ((d.getFullYear() - 1980) << 9 | (d.getMonth() + 1) << 5 | d.getDate()) & 0xFFFF, tm = (d.getHours() << 11 | d.getMinutes() << 5 | (d.getSeconds() >> 1)) & 0xFFFF;
+    for (const f of files) {
+      const name = enc.encode(f.name), data = f.bytes, crc = crc32(data);
+      const h = new DataView(new ArrayBuffer(30));
+      h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
+      h.setUint16(10, tm, true); h.setUint16(12, dt, true); h.setUint32(14, crc, true); h.setUint32(18, data.length, true); h.setUint32(22, data.length, true);
+      h.setUint16(26, name.length, true); h.setUint16(28, 0, true);
+      parts.push(new Uint8Array(h.buffer), name, data);
+      const c = new DataView(new ArrayBuffer(46));
+      c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true);
+      c.setUint16(12, tm, true); c.setUint16(14, dt, true); c.setUint32(16, crc, true); c.setUint32(20, data.length, true); c.setUint32(24, data.length, true);
+      c.setUint16(28, name.length, true); c.setUint32(42, off, true);
+      central.push(new Uint8Array(c.buffer), name);
+      off += 30 + name.length + data.length;
+    }
+    const cdSize = central.reduce((a, p) => a + p.length, 0);
+    const e = new DataView(new ArrayBuffer(22));
+    e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cdSize, true); e.setUint32(16, off, true);
+    return new Blob([...parts, ...central, new Uint8Array(e.buffer)], { type: 'application/zip' });
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = E;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+
+</script>
+<script>
+(function () {
+  'use strict';
+  const E = window.OverlayEngine;
+  const PDFJS = window.pdfjsLib;
+  const $ = (s) => document.querySelector(s);
+  const el = (tag, attrs, ...kids) => {
+    const n = document.createElement(tag);
+    if (attrs) for (const k in attrs) { const v = attrs[k]; if (k === 'class') n.className = v; else if (k === 'text') n.textContent = v; else if (k.startsWith('on')) n.addEventListener(k.slice(2), v); else if (v === true) n.setAttribute(k, ''); else if (v !== false && v != null) n.setAttribute(k, v); }
+    for (const c of kids) if (c != null) n.append(c);
+    return n;
+  };
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const sv = (tag, attrs) => { const n = document.createElementNS(SVGNS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; };
+  const mul = E.mul, ap = E.ap, inv = E.inv;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const ICON = {
+    eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+    eyeOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3l18 18M10.6 5.1A10 10 0 0112 5c6.5 0 10 7 10 7a17 17 0 01-3.2 4.2M6.6 6.6C3.8 8.4 2 12 2 12s3.5 7 10 7a9.6 9.6 0 004.4-1.1"/></svg>',
+    x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    sliders: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>',
+    up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 15l6-6 6 6"/></svg>',
+    down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg>',
+    left: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 6l-6 6 6 6"/></svg>',
+    right: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg>',
+  };
+  const PALETTE = ['#1f5fd1', '#d12f7a', '#16935a', '#e07800', '#7b3fd6', '#0b98b3', '#9a6b00'];
+  const REDLINE = '#D91A1A';
+  const AUTHOR = 'karll';
+
+  PDFJS.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  // ---------------- state ----------------
+  const S = {
+    file: null, doc: null, sheets: [], basePn: null, mode: 'pan',
+    overlays: {}, markups: {}, sel: null, selMk: null,
+    view: { z: 1, x: 0, y: 0 }, views: {}, solo: null,
+    cache: {}, info: {}, prev: new Map(), tiles: new Map(), hiGen: 0,
+    twopt: null, dpr: 1, colorIdx: 0, bmGen: 0, alignQueue: Promise.resolve(), step: 1,
+    filter: '', openAdj: new Set()
+  };
+  window.__overlayState = S; // for debugging/tests
+
+  const stage = $('#stage'), cv = $('#cv'), ctx = cv.getContext('2d'), svg = $('#svg');
+  const scratch = document.createElement('canvas'), sctx = scratch.getContext('2d');
+
+  // ---------------- helpers ----------------
+  let toastT = 0;
+  function toast(msg, ms) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), ms || 3200); }
+  function status(msg) { $('#stMsg').textContent = msg; }
+  let busyN = 0;
+  function busy(on, msg) { busyN += on ? 1 : -1; if (busyN < 0) busyN = 0; $('#busy').hidden = busyN === 0; if (on && msg) $('#busyMsg').textContent = msg; }
+  const sheet = (pn) => S.sheets[pn - 1];
+  const label = (pn) => { const b = sheet(pn); return b && b.num ? b.num : 'Page ' + pn; };
+  const fullLabel = (pn) => { const b = sheet(pn); return (b && b.num ? b.num : 'Page ' + pn) + (b && b.name ? ' ' + b.name : ''); };
+  const hex2rgb = (h) => { const n = parseInt(h.slice(1), 16); return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; };
+  const curOvs = () => (S.overlays[S.basePn] || (S.overlays[S.basePn] = []));
+  const curMks = () => (S.markups[S.basePn] || (S.markups[S.basePn] = []));
+  const selOv = () => curOvs().find(o => o.id === S.sel) || null;
+  const shownPn = () => S.solo || S.basePn;
+  function alignM(o) { return E.alignMatrix(o); }
+
+  async function pageInfo(pn) {
+    if (S.info[pn]) return S.info[pn];
+    const page = await S.doc.getPage(pn);
+    const vp = page.getViewport({ scale: 1 });
+    return (S.info[pn] = { page, W: vp.width, H: vp.height, view: page.view.slice(), rotate: page.rotate });
+  }
+
+  // ---------------- loading ----------------
+  async function openFile(file) {
+    if (!file) return;
+    if (!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') { toast('That file is not a PDF.'); return; }
+    S.bmGen++;
+    try { if (S.doc) await S.doc.destroy(); } catch (e) { }
+    Object.assign(S, { file, doc: null, sheets: [], basePn: null, overlays: {}, markups: {}, sel: null, selMk: null, views: {}, solo: null, cache: {}, info: {}, twopt: null, colorIdx: 0 });
+    S.prev.clear(); S.tiles.clear();
+    busy(true, 'Opening ' + file.name);
+    try {
+      const buf = await file.arrayBuffer();
+      S.doc = await PDFJS.getDocument({ data: new Uint8Array(buf), isEvalSupported: false }).promise;
+    } catch (e) {
+      busy(false); toast('Could not open this PDF: ' + (e && e.message || e)); return;
+    }
+    busy(false);
+    for (let i = 1; i <= S.doc.numPages; i++) S.sheets.push({ pn: i, num: null, name: null, src: 'page' });
+    $('#empty').hidden = true;
+    for (const id of ['#sheetCell', '#navGrp', '#toolGrp', '#zoomGrp']) $(id).hidden = false;
+    $('#exportBtn').disabled = false;
+    renderList();
+    await setBase(1);
+    if (narrow()) setDrawer(true);
+    buildBookmarks();
+  }
+
+  async function buildBookmarks() {
+    const gen = S.bmGen;
+    status('Reading title blocks and sheet index');
+    try {
+      await E.buildBookmarks(S.doc, (list, i, n) => {
+        if (gen !== S.bmGen) return;
+        for (const b of list) { const cur = S.sheets[b.pn - 1]; if (cur.userEdited) continue; Object.assign(cur, { num: b.num, name: b.name, src: b.src, W: b.W, H: b.H }); }
+        renderList(); renderHeader(); renderOverlays();
+        status(i < n ? `Reading sheets ${i} of ${n}` : `${n} sheets bookmarked`);
+      }, { cancelled: () => gen !== S.bmGen });
+    } catch (e) { status('Sheet list built from page numbers (title blocks could not be read).'); }
+  }
+
+  // ---------------- base sheet ----------------
+  async function setBase(pn) {
+    if (!S.doc || pn < 1 || pn > S.doc.numPages) return;
+    if (S.basePn) S.views[S.basePn] = Object.assign({}, S.view);
+    endModes();
+    S.basePn = pn; S.sel = null; S.selMk = null; S.solo = null;
+    const inf = await pageInfo(pn);
+    if (S.views[pn]) S.view = Object.assign({}, S.views[pn]); else fit(inf);
+    renderHeader(); renderList(); renderOverlays(); renderMarkupList();
+    draw(); ensurePreviews();
+    const li = document.querySelector(`.sh[data-pn="${pn}"]`); if (li) li.scrollIntoView({ block: 'nearest' });
+  }
+  function fit(inf) {
+    inf = inf || S.info[shownPn()]; if (!inf) return;
+    const r = stage.getBoundingClientRect(); const pad = 24;
+    const z = Math.min((r.width - 2 * pad) / inf.W, (r.height - 2 * pad) / inf.H);
+    S.view = { z, x: (r.width - z * inf.W) / 2, y: (r.height - z * inf.H) / 2 };
+    afterView();
+  }
+
+  // ---------------- previews and tiles ----------------
+  function getPreview(pn, role) {
+    const key = role + ':' + pn;
+    if (S.prev.has(key)) { const v = S.prev.get(key); S.prev.delete(key); S.prev.set(key, v); return v; }
+    const v = { ready: false, cv: null, k: 1 };
+    v.promise = (async () => {
+      const inf = await pageInfo(pn);
+      const k = Math.min(1.6, 2600 / Math.max(inf.W, inf.H));
+      const vp = inf.page.getViewport({ scale: k });
+      const c = document.createElement('canvas'); c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
+      const cx = c.getContext('2d');
+      await inf.page.render({ canvasContext: cx, viewport: vp, annotationMode: role === 'base' ? PDFJS.AnnotationMode.ENABLE : PDFJS.AnnotationMode.DISABLE }).promise;
+      Object.assign(v, { ready: true, cv: c, k }); draw();
+    })().catch(() => { });
+    S.prev.set(key, v);
+    while (S.prev.size > 14) { const first = S.prev.keys().next().value; S.prev.delete(first); }
+    return v;
+  }
+  function ensurePreviews() {
+    if (!S.basePn) return;
+    getPreview(shownPn(), S.solo ? 'ov' : 'base');
+    if (!S.solo) for (const o of curOvs()) if (o.visible) getPreview(o.pn, 'ov');
+  }
+
+  let hiTimer = 0;
+  function scheduleHiRes() { clearTimeout(hiTimer); hiTimer = setTimeout(runHiRes, 220); }
+  async function runHiRes() {
+    const gen = ++S.hiGen;
+    if (!S.basePn) return;
+    const W = cv.width, H = cv.height, VD = devM();
+    const layers = [];
+    if (S.solo) layers.push({ key: 'solo:' + S.solo, pn: S.solo, M: VD, A: null, ann: false });
+    else {
+      layers.push({ key: 'base:' + S.basePn, pn: S.basePn, M: VD, A: null, ann: true });
+      for (const o of curOvs()) if (o.visible && o.ready) { const A = alignM(o); layers.push({ key: 'ov:' + o.id, pn: o.pn, M: mul(VD, A), A, ann: false }); }
+    }
+    for (const L of layers) {
+      if (gen !== S.hiGen) return;
+      const t = S.tiles.get(L.key);
+      if (t && t.W === W && t.H === H && sameM(t.VD, VD) && sameA(t.A, L.A)) continue;
+      const inf = await pageInfo(L.pn);
+      const c = document.createElement('canvas'); c.width = W; c.height = H;
+      let ok = false;
+      for (const ann of (L.ann ? [true, false] : [false])) {
+        const cx2 = c.getContext('2d'); cx2.setTransform(1, 0, 0, 1, 0, 0); cx2.clearRect(0, 0, W, H);
+        const task = inf.page.render({ canvasContext: cx2, viewport: inf.page.getViewport({ scale: 1 }), transform: L.M, background: 'rgba(0,0,0,0)', annotationMode: ann ? PDFJS.AnnotationMode.ENABLE : PDFJS.AnnotationMode.DISABLE });
+        S.curTask = task;
+        try { await task.promise; ok = true; break; }
+        catch (e) { if (gen !== S.hiGen || (e && e.name === 'RenderingCancelledException')) return; console.warn('Sharp render failed' + (ann ? ', retrying without markups' : ''), e); }
+      }
+      if (!ok) continue;
+      if (gen !== S.hiGen) return;
+      S.tiles.set(L.key, { cv: c, VD, A: L.A, W, H });
+      draw();
+    }
+  }
+  const sameM = (a, b) => a && b && a.every((v, i) => Math.abs(v - b[i]) < 1e-6);
+  const sameA = (a, b) => (!a && !b) || (a && b && a.every((v, i) => Math.abs(v - b[i]) < 1e-9));
+  function cancelHi() { S.hiGen++; try { S.curTask && S.curTask.cancel(); } catch (e) { } }
+
+  // ---------------- drawing ----------------
+  function devM() { const d = S.dpr, v = S.view; return [v.z * d, 0, 0, v.z * d, v.x * d, v.y * d]; }
+  function resize() {
+    const r = stage.getBoundingClientRect(); S.dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = Math.max(1, Math.round(r.width * S.dpr)); cv.height = Math.max(1, Math.round(r.height * S.dpr));
+    scratch.width = cv.width; scratch.height = cv.height;
+    svg.setAttribute('viewBox', `0 0 ${r.width} ${r.height}`);
+    draw(); scheduleHiRes();
+  }
+  function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+
+  let rafId = 0;
+  function draw() { if (!rafId) rafId = requestAnimationFrame(() => { rafId = 0; drawNow(); }); }
+  function drawNow() {
+    const W = cv.width, H = cv.height;
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+    ctx.fillStyle = cssVar('--desk') || '#c7ccd1'; ctx.fillRect(0, 0, W, H);
+    const pn = shownPn(); const inf = pn && S.info[pn];
+    if (!inf) { drawSvg(); return; }
+    const VD = devM();
+    // paper
+    ctx.save(); ctx.setTransform(...VD); ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 12 * S.dpr; ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, inf.W, inf.H); ctx.restore();
+    const role = S.solo ? 'ov' : 'base';
+    const pv = getPreview(pn, role);
+    if (pv.ready) { ctx.setTransform(...mul(VD, [1 / pv.k, 0, 0, 1 / pv.k, 0, 0])); ctx.drawImage(pv.cv, 0, 0); }
+    drawTile(ctx, S.tiles.get((S.solo ? 'solo:' : 'base:') + pn), VD, null, [inf.W, inf.H]);
+    if (!S.solo) {
+      for (const o of curOvs()) {
+        if (!o.visible || !o.ready) continue;
+        const A = alignM(o), VDA = mul(VD, A);
+        sctx.setTransform(1, 0, 0, 1, 0, 0); sctx.globalCompositeOperation = 'source-over'; sctx.globalAlpha = 1;
+        sctx.fillStyle = '#fff'; sctx.fillRect(0, 0, W, H);
+        sctx.save();
+        if (o.crop) { sctx.setTransform(...VDA); sctx.beginPath(); sctx.rect(o.crop[0], o.crop[1], o.crop[2] - o.crop[0], o.crop[3] - o.crop[1]); sctx.clip(); }
+        const op = getPreview(o.pn, 'ov');
+        if (op.ready) { sctx.setTransform(...mul(VDA, [1 / op.k, 0, 0, 1 / op.k, 0, 0])); sctx.drawImage(op.cv, 0, 0); }
+        drawTile(sctx, S.tiles.get('ov:' + o.id), VD, A);
+        sctx.restore();
+        sctx.setTransform(1, 0, 0, 1, 0, 0);
+        sctx.globalCompositeOperation = 'lighten'; sctx.fillStyle = o.color; sctx.fillRect(0, 0, W, H);
+        sctx.globalCompositeOperation = 'source-over';
+        ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = o.opacity;
+        ctx.drawImage(scratch, 0, 0);
+        ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+      }
+      drawGridDebug(VD);
+    }
+    drawSvg();
+  }
+  // Draw a sharp tile over the low-res preview. The preview is whited out under the tile first,
+  // otherwise its blur shows through as a haze around every line.
+  function drawTile(c, t, VD, A, pageWH) {
+    if (!t || !sameA(t.A, A)) return;
+    const r = VD[0] / t.VD[0]; if (r < 0.2 || r > 5) return;
+    c.save();
+    if (pageWH) { c.setTransform(...VD); c.beginPath(); c.rect(0, 0, pageWH[0], pageWH[1]); c.clip(); }
+    c.setTransform(...mul(VD, inv(t.VD)));
+    c.fillStyle = '#fff'; c.fillRect(0, 0, t.W, t.H);
+    c.drawImage(t.cv, 0, 0); c.restore();
+  }
+  function drawGridDebug(VD) {
+    const o = selOv(); if (!o || !o.showGrid || !o.ready) return;
+    const B = S.cache[S.basePn], O = S.cache[o.pn]; if (!B || !O) return;
+    const inf = S.info[S.basePn];
+    ctx.save(); ctx.setTransform(...VD); ctx.lineWidth = 1.2 / S.view.z;
+    const A = alignM(o);
+    const line = (x0, y0, x1, y1, M) => { const a = M ? ap(M, x0, y0) : [x0, y0], b = M ? ap(M, x1, y1) : [x1, y1]; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); };
+    ctx.setLineDash([8 / S.view.z, 4 / S.view.z]); ctx.strokeStyle = 'rgba(10,108,102,.85)';
+    for (const l of B.grid.cols) line(l.pos, 0, l.pos, inf.H); for (const l of B.grid.rows) line(0, l.pos, inf.W, l.pos);
+    ctx.setLineDash([]); ctx.strokeStyle = o.color; ctx.lineWidth = 2 / S.view.z;
+    const oi = S.info[o.pn];
+    for (const l of O.grid.cols) line(l.pos, 0, l.pos, oi.H, A); for (const l of O.grid.rows) line(0, l.pos, oi.W, l.pos, A);
+    ctx.restore();
+  }
+
+  // ---------------- SVG overlay (markups, crop outline, picks) ----------------
+  function toScreen(p) { const v = S.view; return [v.z * p[0] + v.x, v.z * p[1] + v.y]; }
+  function toPage(sx, sy) { const v = S.view; return [(sx - v.x) / v.z, (sy - v.y) / v.z]; }
+  function cloudD(pts, r) {
+    const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length, cy = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+    let d = '';
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length]; const L = Math.hypot(b[0] - a[0], b[1] - a[1]); const n = Math.max(1, Math.round(L / (2 * r)));
+      let nx = (b[1] - a[1]) / (L || 1), ny = -(b[0] - a[0]) / (L || 1);
+      const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2; if ((mx - cx) * nx + (my - cy) * ny < 0) { nx = -nx; ny = -ny; }
+      for (let k = 0; k < n; k++) {
+        const p0 = [a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n], p1 = [a[0] + (b[0] - a[0]) * (k + 1) / n, a[1] + (b[1] - a[1]) * (k + 1) / n];
+        const h = 0.66 * L / n;
+        if (!d) d = `M${p0[0]} ${p0[1]}`;
+        d += ` C${p0[0] + nx * h} ${p0[1] + ny * h} ${p1[0] + nx * h} ${p1[1] + ny * h} ${p1[0]} ${p1[1]}`;
+      }
+    }
+    return d + 'Z';
+  }
+  function drawSvg() {
+    while (svg.firstChild) svg.firstChild.remove();
+    if (!S.basePn) return;
+    const z = S.view.z;
+    if (!S.solo) {
+      // crop outline of selected overlay
+      const o = selOv();
+      if (o && o.ready && (o.crop || S.mode === 'crop')) {
+        const A = alignM(o); const inf = S.info[o.pn];
+        const c = o.crop || [0, 0, inf.W, inf.H];
+        const pts = [[c[0], c[1]], [c[2], c[1]], [c[2], c[3]], [c[0], c[3]]].map(p => toScreen(ap(A, p[0], p[1])));
+        svg.append(sv('polygon', { points: pts.map(p => p.join(',')).join(' '), fill: 'none', stroke: o.color, 'stroke-width': 1.5, 'stroke-dasharray': '6 4' }));
+      }
+      // markups
+      for (const m of curMks()) {
+        const g = sv('g', { 'data-mk': m.id });
+        const sel = m.id === S.selMk;
+        const sw = Math.max(1, (m.width || 2) * z);
+        if (m.type === 'cloud') {
+          const pts = m.points.map(toScreen);
+          g.append(sv('path', { d: cloudD(pts, Math.max(3, 6 * z)), fill: 'none', stroke: REDLINE, 'stroke-width': sw, 'stroke-linejoin': 'round' }));
+          g.append(sv('path', { class: 'hit', d: cloudD(pts, Math.max(3, 6 * z)), fill: 'none', stroke: 'transparent', 'stroke-width': Math.max(10, sw + 8) }));
+        } else if (m.type === 'arrow') {
+          const a = toScreen(m.points[0]), b = toScreen(m.points[1]);
+          const ang = Math.atan2(a[1] - b[1], a[0] - b[0]), hl = (10 + 2 * (m.width || 2)) * z;
+          const h1 = [b[0] + hl * Math.cos(ang + 0.45), b[1] + hl * Math.sin(ang + 0.45)], h2 = [b[0] + hl * Math.cos(ang - 0.45), b[1] + hl * Math.sin(ang - 0.45)];
+          g.append(sv('path', { d: `M${a[0]} ${a[1]} L${b[0]} ${b[1]} M${h1[0]} ${h1[1]} L${b[0]} ${b[1]} L${h2[0]} ${h2[1]}`, fill: 'none', stroke: REDLINE, 'stroke-width': sw, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+          g.append(sv('path', { class: 'hit', d: `M${a[0]} ${a[1]} L${b[0]} ${b[1]}`, stroke: 'transparent', 'stroke-width': Math.max(10, sw + 8) }));
+        } else if (m.type === 'text') {
+          const p0 = toScreen([m.box[0], m.box[1]]), p1 = toScreen([m.box[2], m.box[3]]);
+          const w = p1[0] - p0[0], h = p1[1] - p0[1];
+          g.append(sv('rect', { class: 'hitfill', x: p0[0], y: p0[1], width: w, height: h, fill: 'rgba(255,255,255,0.01)', stroke: REDLINE, 'stroke-width': Math.max(0.75, z) }));
+          const fo = sv('foreignObject', { x: p0[0] + 2 * z, y: p0[1] + 1 * z, width: Math.max(1, w - 4 * z), height: Math.max(1, h - 2 * z) });
+          fo.style.pointerEvents = 'none';
+          const div = document.createElement('div');
+          div.style.cssText = `font:${9 * z}px/1.2 'Arial Narrow','IBM Plex Sans Condensed',sans-serif;color:${REDLINE};white-space:pre-wrap;word-break:break-word;overflow:hidden;height:100%`;
+          div.textContent = m.text; fo.append(div); g.append(fo);
+        }
+        if (sel) { const bb = mkBox(m).map(toScreen); g.append(sv('rect', { x: bb[0][0] - 4, y: bb[0][1] - 4, width: bb[1][0] - bb[0][0] + 8, height: bb[1][1] - bb[0][1] + 8, fill: 'none', stroke: cssVar('--accent'), 'stroke-dasharray': '3 3' })); }
+        svg.append(g);
+      }
+    }
+    // rubber band
+    if (S.drag && S.drag.band) {
+      const a = S.drag.band[0], b = S.drag.band[1];
+      if (S.mode === 'arrow') svg.append(sv('line', { x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: REDLINE, 'stroke-width': 2 }));
+      else svg.append(sv('rect', { x: Math.min(a[0], b[0]), y: Math.min(a[1], b[1]), width: Math.abs(b[0] - a[0]), height: Math.abs(b[1] - a[1]), fill: S.mode === 'crop' ? 'rgba(10,108,102,.08)' : 'none', stroke: S.mode === 'crop' ? cssVar('--accent') : REDLINE, 'stroke-width': 1.5, 'stroke-dasharray': S.mode === 'crop' ? '6 4' : '' }));
+    }
+    // two-point picks
+    if (S.twopt) {
+      const t = S.twopt; const picks = t.phase === 'ov' ? t.ovPts : t.basePts;
+      picks.forEach((p, i) => { const s = toScreen(p); svg.append(sv('circle', { cx: s[0], cy: s[1], r: 7, fill: 'none', stroke: '#e0007a', 'stroke-width': 2 })); svg.append(sv('path', { d: `M${s[0] - 12} ${s[1]}H${s[0] + 12}M${s[0]} ${s[1] - 12}V${s[1] + 12}`, stroke: '#e0007a', 'stroke-width': 1 })); const tx = sv('text', { x: s[0] + 10, y: s[1] - 10, fill: '#e0007a', 'font-size': 13, 'font-family': 'IBM Plex Mono, monospace', 'font-weight': 600 }); tx.textContent = String(i + 1); svg.append(tx); });
+      if (t.snap) { const s = toScreen(t.snap); svg.append(sv('rect', { x: s[0] - 6, y: s[1] - 6, width: 12, height: 12, fill: 'none', stroke: '#e0007a', 'stroke-width': 2 })); }
+    }
+  }
+  function mkBox(m) {
+    if (m.type === 'text') return [[m.box[0], m.box[1]], [m.box[2], m.box[3]]];
+    const xs = m.points.map(p => p[0]), ys = m.points.map(p => p[1]);
+    return [[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]];
+  }
+
+  // ---------------- view changes ----------------
+  function afterView() {
+    $('#zoomV').textContent = Math.round(S.view.z * 100 / (96 / 72)) + '%';
+    draw(); scheduleHiRes();
+  }
+  function zoomAt(f, sx, sy) {
+    const v = S.view; const nz = clamp(v.z * f, 0.02, 60); f = nz / v.z;
+    v.x = sx - (sx - v.x) * f; v.y = sy - (sy - v.y) * f; v.z = nz; afterView();
+  }
+  stage.addEventListener('wheel', (e) => {
+    if (!S.basePn) return; e.preventDefault();
+    const r = stage.getBoundingClientRect();
+    if (e.ctrlKey || !e.shiftKey) zoomAt(Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.0016)), e.clientX - r.left, e.clientY - r.top);
+    else { S.view.x -= e.deltaX || e.deltaY; afterView(); }
+  }, { passive: false });
+
+  // ---------------- pointer interaction ----------------
+  let spaceDown = false;
+  // ---- touch: two-finger pinch zoom and pan ----
+  const ptrs = new Map();
+  function pinchState() {
+    const [a, b] = [...ptrs.values()];
+    return { d: Math.hypot(b.x - a.x, b.y - a.y) || 1, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+  }
+  stage.addEventListener('pointerdown', (e) => {
+    if (!S.basePn) return;
+    if (e.pointerType === 'touch') {
+      const r0 = stage.getBoundingClientRect();
+      ptrs.set(e.pointerId, { x: e.clientX - r0.left, y: e.clientY - r0.top });
+      try { stage.setPointerCapture(e.pointerId); } catch (err) { }
+      if (ptrs.size === 2) {
+        S.drag = null; stage.classList.remove('dragging');
+        const ps = pinchState(); S.pinch = Object.assign(ps, { z0: S.view.z, vx: S.view.x, vy: S.view.y }); drawSvg(); return;
+      }
+      if (ptrs.size > 2) return;
+    }
+    stage.focus({ preventScroll: true });
+    const r = stage.getBoundingClientRect(); const sx = e.clientX - r.left, sy = e.clientY - r.top;
+    const panning = e.button === 1 || spaceDown || (e.button === 0 && S.mode === 'pan');
+    if (e.button === 0 && S.mode === 'pan' && !spaceDown) {
+      const g = e.target.closest && e.target.closest('[data-mk]');
+      if (g) { S.selMk = g.getAttribute('data-mk'); S.drag = { kind: 'mk', id: S.selMk, sx, sy, orig: JSON.parse(JSON.stringify(curMks().find(m => m.id === S.selMk))) }; stage.setPointerCapture(e.pointerId); renderMarkupList(); draw(); return; }
+      if (S.selMk) { S.selMk = null; renderMarkupList(); draw(); }
+    }
+    if (S.mode === 'twopt' && e.button === 0 && !spaceDown) { twoptClick(sx, sy, e.altKey); return; }
+    if (e.button === 0 && !spaceDown && (S.mode === 'move' || (S.mode === 'pan' && e.shiftKey))) {
+      const g = e.target.closest && e.target.closest('[data-mk]');
+      if (g) { S.selMk = g.getAttribute('data-mk'); S.drag = { kind: 'mk', id: S.selMk, sx, sy, orig: JSON.parse(JSON.stringify(curMks().find(m => m.id === S.selMk))) }; stage.setPointerCapture(e.pointerId); renderMarkupList(); draw(); return; }
+      let o = selOv();
+      if (!o) { const vis = curOvs().filter(v => v.visible && v.ready); if (vis.length === 1) { o = vis[0]; S.sel = o.id; renderOverlays(); } }
+      if (!o) { toast('Select an overlay in the sidebar, then drag to move it.'); return; }
+      S.drag = { kind: 'ov', id: o.id, sx, sy, tx: o.tx, ty: o.ty }; stage.classList.add('dragging'); stage.setPointerCapture(e.pointerId); e.preventDefault(); return;
+    }
+    if (panning) { S.drag = { kind: 'pan', sx, sy, vx: S.view.x, vy: S.view.y }; stage.classList.add('dragging'); stage.setPointerCapture(e.pointerId); e.preventDefault(); return; }
+    if (e.button === 0 && ['crop', 'cloud', 'arrow', 'text'].includes(S.mode)) {
+      if (S.mode === 'crop' && !selOv()) { toast('Select an overlay in the sidebar first, then drag the area to keep.'); return; }
+      S.drag = { kind: 'band', band: [[sx, sy], [sx, sy]] }; stage.setPointerCapture(e.pointerId);
+    }
+  });
+  stage.addEventListener('pointermove', (e) => {
+    const r = stage.getBoundingClientRect(); const sx = e.clientX - r.left, sy = e.clientY - r.top;
+    if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, { x: sx, y: sy });
+    if (S.pinch && ptrs.size >= 2) {
+      const P = S.pinch, now = pinchState();
+      const z = clamp(P.z0 * now.d / P.d, 0.02, 60);
+      const px = (P.mx - P.vx) / P.z0, py = (P.my - P.vy) / P.z0;
+      S.view.z = z; S.view.x = now.mx - px * z; S.view.y = now.my - py * z;
+      $('#zoomV').textContent = Math.round(S.view.z * 100 / (96 / 72)) + '%';
+      draw(); return;
+    }
+    if (S.basePn) { const p = toPage(sx, sy); $('#stPos').textContent = `x ${p[0].toFixed(1)}, y ${p[1].toFixed(1)} pt`; }
+    if (S.mode === 'twopt' && S.twopt && !S.drag) { S.twopt.snap = e.altKey ? null : snapAt(sx, sy); drawSvg(); }
+    const d = S.drag; if (!d) return;
+    if (d.kind === 'pan') { S.view.x = d.vx + sx - d.sx; S.view.y = d.vy + sy - d.sy; draw(); }
+    else if (d.kind === 'ov') { const o = curOvs().find(v => v.id === d.id); if (o) { o.tx = d.tx + (sx - d.sx) / S.view.z; o.ty = d.ty + (sy - d.sy) / S.view.z; d.moved = true; draw(); } }
+    else if (d.kind === 'band') { d.band[1] = [sx, sy]; drawSvg(); }
+    else if (d.kind === 'mk') {
+      const dx = (sx - d.sx) / S.view.z, dy = (sy - d.sy) / S.view.z; const m = curMks().find(m => m.id === d.id); if (!m) return;
+      if (m.type === 'text') m.box = [d.orig.box[0] + dx, d.orig.box[1] + dy, d.orig.box[2] + dx, d.orig.box[3] + dy];
+      else m.points = d.orig.points.map(p => [p[0] + dx, p[1] + dy]);
+      d.moved = true; drawSvg();
+    }
+  });
+  const endTouch = (e) => {
+    ptrs.delete(e.pointerId);
+    if (S.pinch && ptrs.size < 2) { S.pinch = null; S.drag = null; afterView(); return true; }
+    return false;
+  };
+  stage.addEventListener('pointercancel', (e) => { endTouch(e); S.drag = null; stage.classList.remove('dragging'); drawSvg(); });
+  stage.addEventListener('pointerup', (e) => {
+    if (endTouch(e)) return;
+    const d = S.drag; S.drag = null; stage.classList.remove('dragging');
+    if (!d) return;
+    if (d.kind === 'pan') { afterView(); return; }
+    if (d.kind === 'ov') { const o = curOvs().find(v => v.id === d.id); if (o && d.moved) { changed(o); status(`Moved ${label(o.pn)} by hand.`); } return; }
+    if (d.kind === 'mk') { drawSvg(); return; }
+    if (d.kind === 'band') {
+      const [a, b] = d.band; const big = Math.hypot(b[0] - a[0], b[1] - a[1]) > 6;
+      const pa = toPage(a[0], a[1]), pb = toPage(b[0], b[1]);
+      if (!big) { drawSvg(); return; }
+      if (S.mode === 'crop') applyCrop(pa, pb);
+      else if (S.mode === 'cloud') addMarkup({ type: 'cloud', points: [[Math.min(pa[0], pb[0]), Math.min(pa[1], pb[1])], [Math.max(pa[0], pb[0]), Math.min(pa[1], pb[1])], [Math.max(pa[0], pb[0]), Math.max(pa[1], pb[1])], [Math.min(pa[0], pb[0]), Math.max(pa[1], pb[1])]] });
+      else if (S.mode === 'arrow') addMarkup({ type: 'arrow', points: [pa, pb] });
+      else if (S.mode === 'text') startTextEdit([Math.min(pa[0], pb[0]), Math.min(pa[1], pb[1]), Math.max(pa[0], pb[0]), Math.max(pa[1], pb[1])]);
+      drawSvg();
+    }
+  });
+  stage.addEventListener('dblclick', (e) => {
+    const g = e.target.closest && e.target.closest('[data-mk]'); if (!g) return;
+    const m = curMks().find(m => m.id === g.getAttribute('data-mk')); if (m && m.type === 'text') startTextEdit(m.box, m);
+  });
+
+  // ---------------- markups ----------------
+  let mkSeq = 1;
+  function addMarkup(m) { m.id = 'm' + (mkSeq++); m.width = m.type === 'text' ? 1 : 2; curMks().push(m); S.selMk = m.id; renderMarkupList(); setMode('pan'); draw(); }
+  function startTextEdit(box, existing) {
+    const p0 = toScreen([box[0], box[1]]), p1 = toScreen([box[2], box[3]]);
+    const ta = el('textarea', { class: 'textedit', 'aria-label': 'Text box content' });
+    ta.style.left = p0[0] + 'px'; ta.style.top = p0[1] + 'px'; ta.style.width = Math.max(120, p1[0] - p0[0]) + 'px'; ta.style.height = Math.max(40, p1[1] - p0[1]) + 'px';
+    ta.value = existing ? existing.text : '';
+    stage.append(ta); setTimeout(() => ta.focus(), 0);
+    let done = false;
+    const commit = () => {
+      if (done) return; done = true; const txt = ta.value.trim(); ta.remove();
+      if (existing) { if (txt) existing.text = txt; else removeMarkup(existing.id); renderMarkupList(); draw(); return; }
+      if (txt) addMarkup({ type: 'text', box, text: txt }); else setMode('pan');
+    };
+    ta.addEventListener('blur', commit);
+    ta.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Escape') { ta.value = existing ? existing.text : ''; ta.blur(); } if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) ta.blur(); });
+  }
+  function removeMarkup(id) { const L = curMks(); const i = L.findIndex(m => m.id === id); if (i >= 0) L.splice(i, 1); if (S.selMk === id) S.selMk = null; renderMarkupList(); draw(); }
+  function renderMarkupList() {
+    const box = $('#mkList'); box.textContent = '';
+    const L = curMks(); if (!L.length) return;
+    box.append(el('div', { class: 'sec-h' }, el('span', { text: 'Markups' }), el('span', { class: 'spacer' }), el('span', { class: 'ct', text: String(L.length) })));
+    for (const m of L) {
+      const nm = m.type === 'cloud' ? 'Cloud' : m.type === 'arrow' ? 'Arrow' : 'Text: ' + m.text;
+      const del = el('button', { class: 'ib', title: 'Delete markup', 'aria-label': 'Delete markup', onclick: () => removeMarkup(m.id) }); del.innerHTML = ICON.x;
+      box.append(el('div', { class: 'mk', style: m.id === S.selMk ? 'background:var(--hover)' : '' }, el('span', { text: nm, onclick: () => { S.selMk = m.id; renderMarkupList(); draw(); } }), del));
+    }
+  }
+
+  // ---------------- crop ----------------
+  function applyCrop(pa, pb) {
+    const o = selOv(); if (!o) return;
+    const Ai = inv(alignM(o)); const inf = S.info[o.pn];
+    const pts = [[pa[0], pa[1]], [pb[0], pa[1]], [pb[0], pb[1]], [pa[0], pb[1]]].map(p => ap(Ai, p[0], p[1]));
+    const c = [Math.max(0, Math.min(...pts.map(p => p[0]))), Math.max(0, Math.min(...pts.map(p => p[1]))), Math.min(inf.W, Math.max(...pts.map(p => p[0]))), Math.min(inf.H, Math.max(...pts.map(p => p[1])))];
+    if (c[2] - c[0] < 2 || c[3] - c[1] < 2) { toast('The crop area misses the overlay sheet.'); return; }
+    o.crop = c; setMode('pan'); renderOverlays(); draw(); status(`Cropped ${label(o.pn)} to the selected area.`);
+  }
+
+  // ---------------- overlays ----------------
+  let ovSeq = 1;
+  async function addOverlay(pn) {
+    if (pn === S.basePn) return;
+    if (curOvs().some(o => o.pn === pn)) return;
+    const o = { id: 'o' + (ovSeq++), pn, color: PALETTE[S.colorIdx++ % PALETTE.length], opacity: 0.75, visible: true, s: 1, rot: 0, tx: 0, ty: 0, crop: null, ready: false, status: 'pending', conf: null, basePn: S.basePn };
+    curOvs().push(o); S.sel = o.id;
+    renderOverlays(); renderList();
+    await pageInfo(pn); getPreview(pn, 'ov');
+    runAuto(o);
+  }
+  function runAuto(o) {
+    o.status = 'pending'; renderOverlays();
+    S.alignQueue = S.alignQueue.then(async () => {
+      busy(true, `Aligning ${label(o.pn)} on ${label(o.basePn)}`);
+      try {
+        const r = await E.autoAlign(PDFJS, S.doc, o.basePn, o.pn, S.cache);
+        if (r.ok) {
+          Object.assign(o, { s: r.best.s, rot: 0, tx: r.best.tx, ty: r.best.ty, status: 'auto', conf: r.confidence });
+          o.auto = { s: r.best.s, tx: r.best.tx, ty: r.best.ty, conf: r.confidence };
+          status(`${label(o.pn)} aligned on ${r.best.nx + r.best.ny} grid lines, ${r.confidence.level} confidence.`);
+        } else {
+          const bi = S.info[o.basePn], oi = S.info[o.pn];
+          const s = Math.min(bi.W / oi.W, bi.H / oi.H);
+          if (!o.ready) Object.assign(o, { s, rot: 0, tx: 0, ty: 0 });
+          Object.assign(o, { status: 'failed', conf: r.confidence });
+          status(`${label(o.pn)}: ${r.reason}. Use two-point align.`);
+        }
+      } catch (e) {
+        console.error(e);
+        Object.assign(o, { status: 'failed', conf: { level: 'none', value: 0, notes: ['Alignment error: ' + (e && e.message || e)] } });
+        if (!o.ready) { o.s = 1; o.tx = 0; o.ty = 0; }
+      }
+      o.ready = true; busy(false);
+      renderOverlays(); draw(); scheduleHiRes();
+    });
+  }
+  function removeOverlay(id) {
+    const L = curOvs(); const i = L.findIndex(o => o.id === id); if (i < 0) return;
+    L.splice(i, 1); S.tiles.delete('ov:' + id); if (S.sel === id) S.sel = null;
+    renderOverlays(); renderList(); draw();
+  }
+  function changed(o) {
+    if (o.status !== 'pending') o.status = 'manual';
+    syncFields(o); draw(); scheduleHiRes();
+  }
+  // keep a pivot fixed while scaling or rotating: pivot = centre of the crop (or sheet), in overlay coords
+  function pivotOf(o) { const inf = S.info[o.pn]; const c = o.crop || [0, 0, inf.W, inf.H]; return [(c[0] + c[2]) / 2, (c[1] + c[3]) / 2]; }
+  function setScaleRot(o, s, rot) {
+    const pv = pivotOf(o); const P = ap(alignM(o), pv[0], pv[1]);
+    o.s = s; o.rot = rot; const Q = ap(alignM(o), pv[0], pv[1]);
+    o.tx += P[0] - Q[0]; o.ty += P[1] - Q[1];
+  }
+  function nudge(o, dx, dy) { o.tx += dx; o.ty += dy; changed(o); }
+
+  function confChip(o) {
+    let cls = 'pending', txt = 'Aligning', title = 'Auto-alignment running';
+    if (o.status === 'auto' && o.conf) { cls = o.conf.level; txt = o.conf.level[0].toUpperCase() + o.conf.level.slice(1) + ' ' + o.conf.value; title = 'Auto-aligned. ' + o.conf.notes.join('; '); }
+    else if (o.status === 'manual') { cls = 'manual'; txt = 'Adjusted'; title = 'Position adjusted by hand' + (o.auto ? ` (auto result: ${o.auto.conf.level} ${o.auto.conf.value})` : ''); }
+    else if (o.status === '2pt') { cls = 'manual'; txt = 'Two-point'; title = 'Aligned from two picked points'; }
+    else if (o.status === 'failed') { cls = 'none'; txt = 'Not aligned'; title = (o.conf && o.conf.notes.join('; ')) || 'Auto-alignment failed'; }
+    const b = el('button', { class: 'chip ' + cls, title, 'aria-label': 'Alignment: ' + txt + '. Show details' }, el('i'), txt);
+    b.addEventListener('click', (e) => { e.stopPropagation(); if (S.openAdj.has(o.id)) S.openAdj.delete(o.id); else S.openAdj.add(o.id); S.sel = o.id; renderOverlays(); draw(); });
+    return b;
+  }
+  function numField(lbl, id, val, step, onset) {
+    const inp = el('input', { id, type: 'number', step: String(step), value: val, 'aria-label': lbl });
+    inp.addEventListener('change', () => { const v = parseFloat(inp.value); if (Number.isFinite(v)) onset(v); });
+    inp.addEventListener('keydown', (e) => e.stopPropagation());
+    return el('label', null, lbl, inp);
+  }
+  function fmtScale(s) {
+    const fr = [[1, 1], [1, 2], [2, 1], [1, 4], [4, 1], [3, 4], [4, 3], [3, 8], [8, 3], [2, 3], [3, 2], [1, 3], [3, 1], [1, 8], [8, 1], [1, 1.5]];
+    let best = null; for (const [a, b] of fr) { const e = Math.abs(Math.log(s / (a / b))); if (!best || e < best.e) best = { a, b, e }; }
+    return best.e < 0.01 ? ` ≈ ${best.a}:${best.b}` : '';
+  }
+  function syncFields(o) {
+    const set = (id, v) => { const n = document.getElementById(id); if (n && document.activeElement !== n) n.value = v; };
+    set('tx-' + o.id, o.tx.toFixed(2)); set('ty-' + o.id, o.ty.toFixed(2)); set('s-' + o.id, (o.s * 100).toFixed(3)); set('r-' + o.id, (o.rot * 180 / Math.PI).toFixed(3));
+    const card = document.querySelector(`.card[data-id="${o.id}"]`);
+    if (card) { const old = card.querySelector('.chip'); if (old) old.replaceWith(confChip(o)); }
+    if (o.id === S.sel) $('#stScale').textContent = `scale ×${o.s.toFixed(4)}${fmtScale(o.s)}`;
+  }
+  function renderOverlays() {
+    const box = $('#ovs'); box.textContent = '';
+    const L = S.basePn ? curOvs() : [];
+    $('#ovTitle').textContent = S.basePn ? `Overlays on ${label(S.basePn)}` : 'Overlays';
+    $('#ovCount').textContent = L.length ? String(L.length) : '';
+    for (const o of L) {
+      const card = el('div', { class: 'card' + (o.id === S.sel ? ' sel' : ''), 'data-id': o.id });
+      card.style.setProperty('--ovc', o.color);
+      const colorIn = el('input', { type: 'color', value: o.color, 'aria-label': 'Overlay color', id: 'c-' + o.id });
+      colorIn.addEventListener('input', () => { o.color = colorIn.value; sw.style.background = o.color; card.style.setProperty('--ovc', o.color); draw(); });
+      const sw = el('label', { class: 'sw', title: 'Change color' }, colorIn); sw.style.background = o.color;
+      const eye = el('button', { class: 'ib', title: o.visible ? 'Hide overlay' : 'Show overlay', 'aria-label': o.visible ? 'Hide overlay' : 'Show overlay', 'aria-pressed': String(!o.visible) }); eye.innerHTML = o.visible ? ICON.eye : ICON.eyeOff;
+      eye.addEventListener('click', (e) => { e.stopPropagation(); o.visible = !o.visible; renderOverlays(); ensurePreviews(); draw(); scheduleHiRes(); });
+      const adjBtn = el('button', { class: 'ib', title: 'Adjust position, scale, rotation', 'aria-label': 'Adjust', 'aria-pressed': String(S.openAdj.has(o.id)) }); adjBtn.innerHTML = ICON.sliders;
+      adjBtn.addEventListener('click', (e) => { e.stopPropagation(); if (S.openAdj.has(o.id)) S.openAdj.delete(o.id); else S.openAdj.add(o.id); S.sel = o.id; renderOverlays(); draw(); });
+      const rm = el('button', { class: 'ib', title: 'Remove overlay', 'aria-label': 'Remove overlay' }); rm.innerHTML = ICON.x;
+      rm.addEventListener('click', (e) => { e.stopPropagation(); removeOverlay(o.id); });
+      const b = sheet(o.pn);
+      const t = el('div', { class: 't' }, el('b', { text: label(o.pn) }), el('span', { text: (b && b.name) || '' }));
+      card.append(el('div', { class: 'row1' }, sw, t, confChip(o), adjBtn, eye, rm));
+      const rng = el('input', { type: 'range', min: '0.1', max: '1', step: '0.05', value: String(o.opacity), id: 'op-' + o.id, 'aria-label': 'Overlay opacity' });
+      const out = el('output', { text: Math.round(o.opacity * 100) + '%' });
+      rng.addEventListener('input', () => { o.opacity = parseFloat(rng.value); out.textContent = Math.round(o.opacity * 100) + '%'; draw(); });
+      card.append(el('div', { class: 'op' }, el('span', { text: 'Opacity' }), rng, out));
+      if (S.openAdj.has(o.id)) card.append(adjustPanel(o));
+      card.addEventListener('click', () => { if (S.sel !== o.id) { S.sel = o.id; renderOverlays(); draw(); syncFields(o); } });
+      box.append(card);
+    }
+    const o = selOv(); $('#stScale').textContent = o ? `scale ×${o.s.toFixed(4)}${fmtScale(o.s)}` : '';
+  }
+  function adjustPanel(o) {
+    const wrap = el('div', { class: 'adj' });
+    if (o.conf && o.conf.notes && o.conf.notes.length) wrap.append(el('ul', { class: 'notes' }, ...o.conf.notes.map(n => el('li', { text: n }))));
+    wrap.append(el('div', { class: 'fields' },
+      numField('X pt', 'tx-' + o.id, o.tx.toFixed(2), 0.5, v => { o.tx = v; changed(o); }),
+      numField('Y pt', 'ty-' + o.id, o.ty.toFixed(2), 0.5, v => { o.ty = v; changed(o); }),
+      numField('Scale %', 's-' + o.id, (o.s * 100).toFixed(3), 0.01, v => { if (v > 0) { setScaleRot(o, v / 100, o.rot); changed(o); } }),
+      numField('Rot °', 'r-' + o.id, (o.rot * 180 / Math.PI).toFixed(3), 0.05, v => { setScaleRot(o, o.s, v * Math.PI / 180); changed(o); })));
+    const btn = (html, title, fn) => { const b = el('button', { title, 'aria-label': title }); b.innerHTML = html; b.addEventListener('click', (e) => { e.stopPropagation(); fn(); }); return b; };
+    const pad = el('div', { class: 'pad' },
+      el('span'), btn(ICON.up, 'Nudge up', () => nudge(o, 0, -S.step)), el('span'),
+      btn(ICON.left, 'Nudge left', () => nudge(o, -S.step, 0)), btn(ICON.down, 'Nudge down', () => nudge(o, 0, S.step)), btn(ICON.right, 'Nudge right', () => nudge(o, S.step, 0)));
+    const seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Nudge step' });
+    for (const st of [0.1, 1, 10]) { const b = el('button', { 'aria-pressed': String(S.step === st), text: st + ' pt' }); b.addEventListener('click', (e) => { e.stopPropagation(); S.step = st; renderOverlays(); }); seg.append(b); }
+    const sc = (f, t) => el('button', { class: 'btn', text: t, onclick: (e) => { e.stopPropagation(); setScaleRot(o, o.s * f, o.rot); changed(o); } });
+    const rt = (d, t) => el('button', { class: 'btn', text: t, onclick: (e) => { e.stopPropagation(); setScaleRot(o, o.s, o.rot + d * Math.PI / 180); changed(o); } });
+    wrap.append(el('div', { class: 'nudge' }, pad, el('div', { style: 'display:grid;gap:4px' }, seg, el('div', { class: 'mini' }, sc(1 / 1.001, '−0.1%'), sc(1.001, '+0.1%'), rt(-0.05, '↺ 0.05°'), rt(0.05, '↻ 0.05°')))));
+    const mini = el('div', { class: 'mini' });
+    mini.append(el('button', { class: 'btn', text: o.crop ? 'Redraw crop' : 'Crop region', title: 'Drag a box around the part of this overlay to keep', onclick: (e) => { e.stopPropagation(); S.sel = o.id; setMode('crop'); if (narrow()) setDrawer(false); } }));
+    if (o.crop) mini.append(el('button', { class: 'btn', text: 'Clear crop', onclick: (e) => { e.stopPropagation(); o.crop = null; renderOverlays(); draw(); } }));
+    mini.append(el('button', { class: 'btn', text: 'Two-point align', title: 'Click two matching points on each sheet', onclick: (e) => { e.stopPropagation(); if (narrow()) setDrawer(false); startTwoPt(o); } }));
+    mini.append(el('button', { class: 'btn', text: 'Re-run auto', onclick: (e) => { e.stopPropagation(); runAuto(o); } }));
+    if (o.auto) mini.append(el('button', { class: 'btn', text: 'Reset to auto', onclick: (e) => { e.stopPropagation(); Object.assign(o, { s: o.auto.s, tx: o.auto.tx, ty: o.auto.ty, rot: 0, status: 'auto', conf: o.auto.conf }); renderOverlays(); draw(); scheduleHiRes(); } }));
+    const gchk = el('input', { type: 'checkbox', id: 'g-' + o.id }); gchk.checked = !!o.showGrid;
+    gchk.addEventListener('change', () => { o.showGrid = gchk.checked; draw(); });
+    mini.append(el('label', { class: 'btn', for: 'g-' + o.id, title: 'Draw the detected grid lines of both sheets' }, gchk, 'Show grids'));
+    wrap.append(mini);
+    wrap.addEventListener('click', (e) => e.stopPropagation());
+    return wrap;
+  }
+
+  // ---------------- two-point alignment ----------------
+  function startTwoPt(o) {
+    endModes();
+    S.twopt = { o, phase: 'ov', ovPts: [], basePts: [], lock: true, snap: null };
+    S.views[S.basePn] = Object.assign({}, S.view);
+    S.solo = o.pn; setMode('twopt', true);
+    fit(S.info[o.pn]); ensurePreviews(); renderBanner(); draw();
+  }
+  function renderBanner() {
+    const b = $('#banner'); b.textContent = '';
+    const t = S.twopt; if (!t) { b.hidden = true; return; }
+    const n = (t.phase === 'ov' ? t.ovPts.length : t.basePts.length) + 1 + (t.phase === 'base' ? 2 : 0);
+    const where = t.phase === 'ov' ? `overlay ${label(t.o.pn)}` : `base ${label(S.basePn)}`;
+    const pointNo = t.phase === 'ov' ? t.ovPts.length + 1 : t.basePts.length + 1;
+    const lock = el('input', { type: 'checkbox', id: 'lockRot' }); lock.checked = t.lock; lock.addEventListener('change', () => (t.lock = lock.checked));
+    b.append(el('span', { class: 'step', text: `STEP ${n}/4` }),
+      el('span', null, 'Click point ', el('b', { text: String(pointNo) }), ` on the ${where}. `, el('span', { style: 'color:var(--muted)', text: 'Snaps to line ends and grid bubbles; hold Alt to place freely.' })),
+      el('label', { style: 'display:flex;gap:4px;align-items:center;white-space:nowrap', for: 'lockRot' }, lock, 'Keep rotation 0°'),
+      el('button', { class: 'btn', text: 'Cancel', onclick: () => endTwoPt(false) }));
+    b.hidden = false;
+  }
+  function snapAt(sx, sy) {
+    const pn = shownPn(); const c = S.cache[pn]; if (!c || !c.idx) return null;
+    const p = toPage(sx, sy); const r = 10 / S.view.z; let best = null, bd = r;
+    for (const s of c.idx.query(p[0] - r, p[1] - r, p[0] + r, p[1] + r)) {
+      for (const e of [0, 2]) { const x = c.idx.S[4 * s + e], y = c.idx.S[4 * s + e + 1]; const d = Math.hypot(x - p[0], y - p[1]); if (d < bd) { bd = d; best = [x, y]; } }
+    }
+    for (const ci of c.circles || []) { const d = Math.hypot(ci.cx - p[0], ci.cy - p[1]); if (d < bd) { bd = d; best = [ci.cx, ci.cy]; } }
+    // grid line intersections win when they are close: they are the best matching points between sheets
+    if (c.grid) for (const cl of c.grid.cols) for (const rw of c.grid.rows) { const d = Math.hypot(cl.pos - p[0], rw.pos - p[1]); if (d < 1.5 * r && d < bd + 0.5 * r) { bd = d; best = [cl.pos, rw.pos]; } }
+    return best;
+  }
+  async function twoptClick(sx, sy, free) {
+    const t = S.twopt; if (!t) return;
+    const pt = (!free && snapAt(sx, sy)) || toPage(sx, sy);
+    if (t.phase === 'ov') {
+      t.ovPts.push(pt);
+      if (t.ovPts.length === 2) {
+        if (Math.hypot(t.ovPts[1][0] - t.ovPts[0][0], t.ovPts[1][1] - t.ovPts[0][1]) < 5) { t.ovPts.pop(); toast('Pick two points farther apart.'); return; }
+        t.phase = 'base'; S.views['solo'] = Object.assign({}, S.view); S.solo = null;
+        if (S.views[S.basePn]) S.view = Object.assign({}, S.views[S.basePn]); else fit(S.info[S.basePn]);
+        afterView(); ensurePreviews();
+      }
+    } else {
+      t.basePts.push(pt);
+      if (t.basePts.length === 2) {
+        const [a1, a2] = t.ovPts, [b1, b2] = t.basePts;
+        const da = [a2[0] - a1[0], a2[1] - a1[1]], db = [b2[0] - b1[0], b2[1] - b1[1]];
+        const la = Math.hypot(...da), lb = Math.hypot(...db);
+        if (lb < 5) { t.basePts.pop(); toast('Pick two points farther apart.'); return; }
+        const o = t.o; const s = lb / la;
+        const rot = t.lock ? 0 : Math.atan2(db[1], db[0]) - Math.atan2(da[1], da[0]);
+        const c = Math.cos(rot), sn = Math.sin(rot);
+        const m = (a) => [s * (c * a[0] - sn * a[1]), s * (sn * a[0] + c * a[1])];
+        const m1 = m(a1), m2 = m(a2);
+        o.s = s; o.rot = rot; o.tx = ((b1[0] - m1[0]) + (b2[0] - m2[0])) / 2; o.ty = ((b1[1] - m1[1]) + (b2[1] - m2[1])) / 2;
+        o.status = '2pt'; o.ready = true;
+        const resid = Math.max(Math.hypot(b1[0] - m1[0] - o.tx, b1[1] - m1[1] - o.ty), Math.hypot(b2[0] - m2[0] - o.tx, b2[1] - m2[1] - o.ty));
+        o.conf = { level: 'manual', value: 0, notes: [`Two-point fit: scale ×${s.toFixed(4)}${fmtScale(s)}, rotation ${(rot * 180 / Math.PI).toFixed(3)}°`, t.lock ? `Rotation held at 0°; point mismatch ${resid.toFixed(2)} pt` : 'Rotation solved from the picks'] };
+        endTwoPt(true);
+        status(`${label(o.pn)} aligned from two points.`); toast(`Aligned ${label(o.pn)} from two points: scale ×${s.toFixed(4)}${fmtScale(s)}`);
+        return;
+      }
+    }
+    renderBanner(); drawSvg();
+  }
+  function endTwoPt(ok) {
+    const t = S.twopt; if (!t) return;
+    if (S.solo) { S.solo = null; if (S.views[S.basePn]) S.view = Object.assign({}, S.views[S.basePn]); }
+    S.twopt = null; $('#banner').hidden = true; setMode('pan', true);
+    renderOverlays(); afterView(); ensurePreviews();
+    if (!ok) status('Two-point alignment cancelled.');
+  }
+
+  // ---------------- modes ----------------
+  function setMode(m, internal) {
+    if (S.twopt && m !== 'twopt' && !internal) endTwoPt(false);
+    S.mode = m; stage.dataset.mode = m;
+    document.querySelectorAll('[data-tool]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === m)));
+    if (m === 'crop') status('Drag a box around the part of the overlay to keep. Esc cancels.');
+    else if (m === 'move') status('Drag to move the selected overlay, or drag a markup. Arrow keys nudge.');
+    else if (m === 'cloud') status('Drag to draw a revision cloud.');
+    else if (m === 'arrow') status('Drag from the tail to the arrow head.');
+    else if (m === 'text') status('Drag a box, then type. Ctrl+Enter finishes.');
+    drawSvg();
+  }
+  function endModes() { if (S.twopt) endTwoPt(false); if (S.mode !== 'pan') setMode('pan'); }
+  document.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => { if (b.dataset.tool === 'crop' && !selOv()) { toast('Select an overlay in the sidebar first.'); return; } setMode(b.dataset.tool); }));
+
+  // ---------------- sheet list ----------------
+  function discipline(num) {
+    if (!num) return 'Unnumbered';
+    const p = (num.match(/^[A-Z]+/) || [''])[0];
+    const map = { G: 'General', T: 'General', CS: 'General', C: 'Civil', L: 'Landscape', AS: 'Architectural site', A: 'Architectural', ID: 'Interiors', S: 'Structural', M: 'Mechanical', P: 'Plumbing', E: 'Electrical', FP: 'Fire protection', FA: 'Fire alarm', T24: 'Energy', PV: 'Photovoltaic', LS: 'Life safety', ADA: 'Accessibility', D: 'Demolition', Q: 'Equipment', K: 'Kitchen' };
+    return map[p] || map[p[0]] || p;
+  }
+  function renderList() {
+    const list = $('#list'); list.textContent = '';
+    const q = S.filter.trim().toLowerCase();
+    const ovSet = new Set((S.basePn ? curOvs() : []).map(o => o.pn));
+    let lastD = null, shown = 0;
+    for (const b of S.sheets) {
+      const hay = ((b.num || '') + ' ' + (b.name || '') + ' page ' + b.pn).toLowerCase();
+      if (q && !hay.includes(q)) continue;
+      shown++;
+      const d = discipline(b.num);
+      if (d !== lastD) { list.append(el('div', { class: 'disc', text: d })); lastD = d; }
+      const isBase = b.pn === S.basePn;
+      const chk = el('input', { type: 'checkbox', 'aria-label': `Overlay ${b.num || 'page ' + b.pn} on the current sheet`, title: isBase ? 'This is the current sheet' : 'Overlay on the current sheet' });
+      chk.checked = ovSet.has(b.pn); chk.disabled = isBase || !S.basePn;
+      chk.addEventListener('click', (e) => e.stopPropagation());
+      chk.addEventListener('change', () => { if (chk.checked) addOverlay(b.pn); else { const o = curOvs().find(o => o.pn === b.pn); if (o) removeOverlay(o.id); } });
+      const n = el('span', { class: 'n', text: b.num || '#' + b.pn, title: 'Page ' + b.pn });
+      const nm = el('span', { class: 'nm' + (b.name ? '' : ' dim'), text: b.name || (b.num ? 'Untitled' : 'Page ' + b.pn), title: (b.name || '') + (b.src && b.src !== 'page' ? `  (from ${b.src === 'index' ? 'sheet index' : b.src === 'outline' ? 'PDF bookmarks' : 'title block'})` : '') });
+      if (isBase) nm.append(el('span', { class: 'tag', text: 'BASE' }));
+      const row = el('div', { class: 'sh' + (isBase ? ' cur' : ''), 'data-pn': b.pn, tabindex: '0', role: 'button', 'aria-label': `Open ${b.num || 'page ' + b.pn} ${b.name || ''}` }, chk, n, nm);
+      row.addEventListener('click', () => { setBase(b.pn); if (narrow()) setDrawer(false); });
+      row.addEventListener('keydown', (e) => { if (e.key === 'Enter') setBase(b.pn); });
+      row.addEventListener('dblclick', (e) => { e.preventDefault(); editSheet(row, b); });
+      list.append(row);
+    }
+    $('#shCount').textContent = S.sheets.length ? (q ? `${shown}/${S.sheets.length}` : String(S.sheets.length)) : '';
+  }
+  function editSheet(row, b) {
+    const inp = el('input', { class: 'edit', value: `${b.num || ''} | ${b.name || ''}`, 'aria-label': 'Sheet number | name' });
+    row.children[2].replaceWith(inp); inp.focus(); inp.select();
+    const done = (save) => { if (save) { const [n, ...rest] = inp.value.split('|'); b.num = n.trim().toUpperCase() || null; b.name = rest.join('|').trim() || null; b.userEdited = true; } renderList(); renderHeader(); renderOverlays(); };
+    inp.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') done(true); if (e.key === 'Escape') done(false); });
+    inp.addEventListener('blur', () => done(true));
+    inp.addEventListener('click', (e) => e.stopPropagation());
+  }
+  $('#search').addEventListener('input', (e) => { S.filter = e.target.value; renderList(); });
+  $('#search').addEventListener('keydown', (e) => e.stopPropagation());
+  function renderHeader() {
+    if (!S.basePn) return;
+    const b = sheet(S.basePn);
+    $('#curNo').textContent = b.num || '#' + S.basePn;
+    $('#curName').textContent = b.name || (S.file ? S.file.name : '');
+    $('#curName').title = b.name || '';
+  }
+
+  // ---------------- export ----------------
+  // ---------------- export ----------------
+  const safeName = (n) => n.replace(/[\\/:*?"<>|]/g, '-').replace(/\s+/g, ' ').trim();
+  const fileBase = () => (S.file ? S.file.name.replace(/\.pdf$/i, '') : 'Sheets');
+  function markedPns() {
+    const out = [];
+    for (const b of S.sheets) {
+      const ovs = (S.overlays[b.pn] || []).filter(o => o.visible && o.ready), mks = S.markups[b.pn] || [];
+      if (ovs.length || mks.length) out.push(b.pn);
+    }
+    return out;
+  }
+  let pickSet = new Set();
+  function openExport() {
+    if (!S.doc) return;
+    const marked = markedPns();
+    $('#scCurNm').textContent = fullLabel(S.basePn);
+    $('#scMarkedCt').textContent = String(marked.length);
+    $('#scAllCt').textContent = String(S.sheets.length);
+    if (!pickSet.size) pickSet = new Set(marked.length ? marked : [S.basePn]);
+    $('#scPickCt').textContent = String(pickSet.size);
+    const curHas = marked.includes(S.basePn);
+    (marked.length > 1 ? $('#scMarked') : curHas || !marked.length ? $('#scCur') : $('#scMarked')).checked = true;
+    $('#expMsg').textContent = '';
+    renderPick(); syncPick();
+    $('#expModal').hidden = false; $('#expGo').disabled = false; $('#expGo').focus();
+  }
+  function syncPick() { $('#pickBox').hidden = !$('#scPick').checked; }
+  function renderPick() {
+    const box = $('#pickList'); box.textContent = '';
+    const q = ($('#pickFilter').value || '').toLowerCase();
+    const marked = new Set(markedPns());
+    for (const b of S.sheets) {
+      const hay = ((b.num || '') + ' ' + (b.name || '') + ' page ' + b.pn).toLowerCase();
+      if (q && !hay.includes(q)) continue;
+      const cb = el('input', { type: 'checkbox' }); cb.checked = pickSet.has(b.pn);
+      cb.addEventListener('change', () => { if (cb.checked) pickSet.add(b.pn); else pickSet.delete(b.pn); $('#scPickCt').textContent = String(pickSet.size); $('#scPick').checked = true; syncPick(); });
+      box.append(el('label', null, cb, el('b', { text: b.num || '#' + b.pn }), el('span', { text: (b.name || 'Page ' + b.pn) + (marked.has(b.pn) ? '  ●' : '') })));
+    }
+  }
+  document.querySelectorAll('input[name="scope"]').forEach(r => r.addEventListener('change', syncPick));
+  $('#pickFilter').addEventListener('input', renderPick);
+  $('#pickFilter').addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') e.preventDefault(); });
+  $('#pickAll').addEventListener('click', () => { const q = ($('#pickFilter').value || '').toLowerCase(); for (const b of S.sheets) { const hay = ((b.num || '') + ' ' + (b.name || '') + ' page ' + b.pn).toLowerCase(); if (!q || hay.includes(q)) pickSet.add(b.pn); } $('#scPickCt').textContent = String(pickSet.size); renderPick(); });
+  $('#pickNone').addEventListener('click', () => { pickSet.clear(); $('#scPickCt').textContent = '0'; renderPick(); });
+  $('#expCancel').addEventListener('click', () => { if (!S.exporting) $('#expModal').hidden = true; });
+  $('#expModal').addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Escape' && !S.exporting) $('#expModal').hidden = true; });
+  $('#expForm').addEventListener('submit', async (e) => {
+    e.preventDefault(); if (S.exporting) return;
+    const scope = (document.querySelector('input[name="scope"]:checked') || {}).value || 'current';
+    const separate = (document.querySelector('input[name="files"]:checked') || {}).value === 'separate';
+    let pns = scope === 'current' ? [S.basePn] : scope === 'marked' ? markedPns() : scope === 'all' ? S.sheets.map(b => b.pn) : [...pickSet].sort((a, b) => a - b);
+    if (!pns.length) { $('#expMsg').textContent = scope === 'marked' ? 'No sheet has an overlay or markup yet.' : 'Choose at least one sheet.'; return; }
+    S.exporting = true; $('#expGo').disabled = true;
+    try { await runExport(pns, separate, scope); $('#expModal').hidden = true; }
+    catch (err) { console.error(err); $('#expMsg').textContent = 'Export failed: ' + (err && err.message || err); }
+    S.exporting = false; $('#expGo').disabled = false;
+  });
+
+  async function sheetSpec(pn) {
+    const bi = await pageInfo(pn);
+    const overlays = [];
+    for (const o of (S.overlays[pn] || []).filter(o => o.visible && o.ready)) {
+      const oi = await pageInfo(o.pn);
+      overlays.push({ pn: o.pn, view: oi.view, rotate: oi.rotate, s: o.s, rot: o.rot, tx: o.tx, ty: o.ty, crop: o.crop, color: hex2rgb(o.color), opacity: o.opacity, name: fullLabel(o.pn) });
+    }
+    const markups = (S.markups[pn] || []).map(m => Object.assign({}, m, { color: hex2rgb(REDLINE) }));
+    return { pn, view: bi.view, rotate: bi.rotate, name: label(pn), title: fullLabel(pn), overlays, markups };
+  }
+  async function libDoc(fresh) {
+    if (fresh || !S.libDoc || S.libDocFor !== S.file) {
+      $('#expMsg').textContent = 'Reading the set for export';
+      const bytes = new Uint8Array(await S.file.arrayBuffer());
+      S.libDoc = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true, updateMetadata: false, throwOnInvalidObject: false });
+      S.libDocFor = S.file;
+    }
+    return S.libDoc;
+  }
+  async function build(sheets, onProgress) {
+    try { return await E.buildPDF(PDFLib, await libDoc(false), sheets, { author: AUTHOR, onProgress }); }
+    catch (e) { console.warn('Export failed once, retrying with a fresh copy of the set', e); return await E.buildPDF(PDFLib, await libDoc(true), sheets, { author: AUTHOR, onProgress }); }
+  }
+  async function runExport(pns, separate, scope) {
+    const msg = (t) => { $('#expMsg').textContent = t; };
+    busy(true, 'Building PDF');
+    try {
+      const sheets = [];
+      for (const pn of pns) sheets.push(await sheetSpec(pn));
+      const tick = () => new Promise(r => setTimeout(r, 0));
+      if (!separate) {
+        const bytes = await build(sheets, async (i, n) => { if (n > 1) { msg(`Building sheet ${i} of ${n}`); await tick(); } });
+        msg('Saving');
+        let name;
+        if (pns.length === 1) { const o = sheets[0].overlays; name = `${sheets[0].name}${o.length ? ' + ' + o.map(x => label(x.pn)).join(' + ') : ''} overlay.pdf`; }
+        else name = `${fileBase()} - ${scope === 'all' ? 'full set' : scope === 'marked' ? 'overlays' : pns.length + ' sheets'}.pdf`;
+        await saveFile(safeName(name), bytes, 'application/pdf');
+      } else {
+        const files = []; const used = new Set();
+        for (let i = 0; i < sheets.length; i++) {
+          msg(`Building sheet ${i + 1} of ${sheets.length}`); await tick();
+          const bytes = await build([sheets[i]]);
+          let nm = safeName(`${sheets[i].title}.pdf`); let k = 2; while (used.has(nm)) nm = safeName(`${sheets[i].title} (${k++}).pdf`); used.add(nm);
+          files.push({ name: nm, bytes });
+        }
+        if (files.length === 1) await saveFile(files[0].name, files[0].bytes, 'application/pdf');
+        else { msg('Packing ' + files.length + ' files'); await tick(); await saveFile(safeName(`${fileBase()} - ${files.length} sheets.zip`), E.zipStore(files), 'application/zip'); }
+      }
+    } finally { busy(false); }
+  }
+  async function saveFile(name, data, mime) {
+    const blob = data instanceof Blob ? data : new Blob([data], { type: mime || 'application/pdf' });
+    let dl = null;
+    try { dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null; } catch (e) { dl = null; }
+    if (dl) {
+      try { await dl.save({ filename: name, data: blob }); toast('Saved ' + name); return; }
+      catch (e) { if (e && e.code === 'declined') { toast('Save cancelled.'); return; } if (e && e.code === 'rate_limited') { toast('A save prompt is already open.'); return; } if (e && e.code === 'too_large') { toast('That file is too large to hand over here. Try separate files or fewer sheets.', 6000); return; } }
+    }
+    const url = URL.createObjectURL(blob);
+    const a = el('a', { href: url, download: name }); document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    toast('Downloaded ' + name);
+  }
+
+  // ---------------- keyboard ----------------
+  document.addEventListener('keydown', (e) => {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') { e.preventDefault(); $('#fileIn').click(); return; }
+    if (!S.basePn) return;
+    if (e.key === ' ') { spaceDown = true; e.preventDefault(); return; }
+    const r = stage.getBoundingClientRect();
+    const o = selOv();
+    const step = e.shiftKey ? 10 : e.altKey ? 0.1 : 1;
+    switch (e.key) {
+      case 'Escape': if (S.twopt) endTwoPt(false); else if (S.mode !== 'pan') setMode('pan'); else if (S.selMk) { S.selMk = null; renderMarkupList(); draw(); } break;
+      case 'ArrowLeft': if (o) { e.preventDefault(); nudge(o, -step, 0); } break;
+      case 'ArrowRight': if (o) { e.preventDefault(); nudge(o, step, 0); } break;
+      case 'ArrowUp': if (o) { e.preventDefault(); nudge(o, 0, -step); } break;
+      case 'ArrowDown': if (o) { e.preventDefault(); nudge(o, 0, step); } break;
+      case 'Delete': case 'Backspace': if (S.selMk) { e.preventDefault(); removeMarkup(S.selMk); } break;
+      case '+': case '=': zoomAt(1.25, r.width / 2, r.height / 2); break;
+      case '-': case '_': zoomAt(0.8, r.width / 2, r.height / 2); break;
+      case 'f': case 'F': case '0': fit(); break;
+      case 'v': case 'V': setMode('pan'); break;
+      case 'm': case 'M': setMode('move'); break;
+      case 'c': case 'C': if (o) setMode('crop'); break;
+      case 'k': case 'K': setMode('cloud'); break;
+      case 'a': case 'A': setMode('arrow'); break;
+      case 't': case 'T': setMode('text'); break;
+      case 'PageDown': e.preventDefault(); setBase(S.basePn + 1); break;
+      case 'PageUp': e.preventDefault(); setBase(S.basePn - 1); break;
+    }
+  });
+  document.addEventListener('keyup', (e) => { if (e.key === ' ') spaceDown = false; });
+
+  // ---------------- drawer (narrow screens) ----------------
+  const narrow = () => window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
+  function setDrawer(open) { $('#app').classList.toggle('side-open', !!open); $('#sideBtn').setAttribute('aria-expanded', String(!!open)); }
+  $('#sideBtn').addEventListener('click', () => setDrawer(!$('#app').classList.contains('side-open')));
+  $('#scrim').addEventListener('click', () => setDrawer(false));
+
+  // ---------------- wiring ----------------
+  $('#openBtn').addEventListener('click', () => $('#fileIn').click());
+  $('#openBtn2').addEventListener('click', () => $('#fileIn').click());
+  $('#fileIn').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; openFile(f); });
+  $('#prevBtn').addEventListener('click', () => setBase(S.basePn - 1));
+  $('#nextBtn').addEventListener('click', () => setBase(S.basePn + 1));
+  $('#zoomIn').addEventListener('click', () => { const r = stage.getBoundingClientRect(); zoomAt(1.25, r.width / 2, r.height / 2); });
+  $('#zoomOut').addEventListener('click', () => { const r = stage.getBoundingClientRect(); zoomAt(0.8, r.width / 2, r.height / 2); });
+  $('#zoomFit').addEventListener('click', () => fit());
+  $('#exportBtn').addEventListener('click', openExport);
+  const drop = $('#drop');
+  ['dragenter', 'dragover'].forEach(t => window.addEventListener(t, (e) => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) { e.preventDefault(); drop.classList.add('over'); } }));
+  ['dragleave', 'drop'].forEach(t => window.addEventListener(t, () => drop.classList.remove('over')));
+  window.addEventListener('drop', (e) => { e.preventDefault(); const f = e.dataTransfer && e.dataTransfer.files[0]; if (f) openFile(f); });
+  new ResizeObserver(resize).observe(stage);
+  if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', draw);
+  new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  resize();
+
+  // test hooks
+  window.__overlayApp = { openFile, setBase, addOverlay, runExport, openExport, S, fit, setMode, applyCrop, buildExportBytes: async () => {
+    const bytes = new Uint8Array(await S.file.arrayBuffer());
+    const src = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+    const bi = await pageInfo(S.basePn); const overlays = [];
+    for (const o of curOvs().filter(o => o.visible && o.ready)) { const oi = await pageInfo(o.pn); overlays.push({ pn: o.pn, view: oi.view, rotate: oi.rotate, s: o.s, rot: o.rot, tx: o.tx, ty: o.ty, crop: o.crop, color: hex2rgb(o.color), opacity: o.opacity, name: fullLabel(o.pn) }); }
+    return E.exportPDF(PDFLib, { srcDoc: src, basePn: S.basePn, baseView: bi.view, baseRotate: bi.rotate, overlays, baseName: label(S.basePn), author: AUTHOR, markups: curMks().map(m => Object.assign({}, m, { color: hex2rgb(REDLINE) })) });
+  } };
+})();
+
+</script>
+
+</body></html>
