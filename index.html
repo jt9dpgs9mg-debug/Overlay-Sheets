@@ -108,7 +108,7 @@ button, input, select { font: inherit; color: inherit; }
 .sw { width: 20px; height: 20px; border-radius: 3px; border: 1px solid rgba(0, 0, 0, .25); position: relative; overflow: hidden; flex: none; cursor: pointer; }
 .sw input { position: absolute; inset: -6px; width: 40px; height: 40px; opacity: 0; cursor: pointer; }
 .card .t { min-width: 0; flex: 1; cursor: pointer; }
-.card .t b { font: 600 14px var(--f-mono); }
+.card .t b { font: 600 14px var(--f-mono); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card .t span { display: block; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .chip { font: 500 11px/1 var(--f-mono); padding: 4px 6px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; display: inline-flex; gap: 5px; align-items: center; background: transparent; cursor: pointer; }
 .chip i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; display: inline-block; }
@@ -196,6 +196,37 @@ button, input, select { font: inherit; color: inherit; }
 .picklist input { margin: 0; accent-color: var(--accent); }
 .dlg .foot { display: flex; gap: 8px; align-items: center; padding: 10px 18px 14px; border-top: 1px solid var(--line); }
 .dlg .foot .msg { flex: 1; font-size: 12px; color: var(--muted); min-width: 0; }
+
+/* sheet controls, badges, menus, editors, handles */
+.sheetctl { display: grid; gap: 4px; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+.sheetctl .op input[type=range] { accent-color: var(--accent); }
+.tgl { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); cursor: pointer; }
+.tgl input { margin: 0; accent-color: var(--accent); }
+.btn.tiny { padding: 2px 7px; font-size: 11px; letter-spacing: 0; text-transform: none; font-weight: 500; color: var(--ink); }
+.sh { grid-template-columns: 22px 64px minmax(0, 1fr) auto 26px; }
+.sh .badges { display: inline-flex; gap: 4px; }
+.badge { font: 500 10px/1 var(--f-mono); padding: 3px 5px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.badge.mk { background: color-mix(in srgb, var(--redline) 14%, transparent); color: var(--redline); }
+.badge.fd { background: var(--hover); color: var(--muted); }
+.sh .more { border: 0; background: transparent; color: var(--muted); border-radius: 3px; width: 24px; height: 22px; cursor: pointer; font-size: 16px; line-height: 1; }
+.sh .more:hover { background: var(--hover); color: var(--ink); }
+.sh .tagx { font: 10px var(--f-mono); color: var(--muted); margin-left: 6px; }
+.rowmenu { position: fixed; z-index: 30; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--shadow); padding: 4px; display: grid; min-width: 190px; }
+.rowmenu button { border: 0; background: transparent; text-align: left; padding: 7px 10px; border-radius: 4px; cursor: pointer; }
+.rowmenu button:hover, .rowmenu button:focus-visible { background: var(--hover); }
+.rowmenu button.danger { color: var(--bad); }
+.mkbar { position: absolute; z-index: 4; display: flex; gap: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--shadow); padding: 3px; }
+.mkbar .btn { padding: 3px 8px; font-size: 12px; }
+.texted { position: absolute; z-index: 5; width: min(340px, calc(100% - 24px)); background: var(--panel); border: 1.5px solid var(--redline); border-radius: 6px; box-shadow: var(--shadow); padding: 8px; display: grid; gap: 6px; }
+.texted textarea { width: 100%; resize: vertical; min-height: 64px; border: 1px solid var(--line); border-radius: 4px; padding: 6px; font: 15px/1.3 "Arial Narrow", var(--f-ui); color: #b01010; background: #fff; }
+.texted .row { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
+.texted select { border: 1px solid var(--line); border-radius: 3px; background: var(--chrome); padding: 2px 4px; }
+.stage svg.ovl .hdl { pointer-events: all; cursor: grab; }
+.stage svg.ovl .hdl.rot { cursor: alias; }
+.stage svg.ovl .hdl.body { cursor: move; }
+@media (max-width: 820px) {
+  .texted { position: fixed; left: 12px; right: 12px; bottom: 12px; width: auto; }
+}
 </style>
 
 <div class="app" id="app">
@@ -210,6 +241,10 @@ button, input, select { font: inherit; color: inherit; }
     <div class="grp" id="navGrp" hidden>
       <button class="ib" id="prevBtn" title="Previous sheet (Page Up)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg></button>
       <button class="ib" id="nextBtn" title="Next sheet (Page Down)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></button>
+    </div>
+    <div class="grp" id="histGrp" hidden>
+      <button class="ib" id="undoBtn" title="Undo (Ctrl+Z)" aria-label="Undo" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg></button>
+      <button class="ib" id="redoBtn" title="Redo (Ctrl+Shift+Z)" aria-label="Redo" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 000 12h3"/></svg></button>
     </div>
     <div class="grp" id="toolGrp" hidden role="toolbar" aria-label="Tools">
       <button class="ib" data-tool="pan" aria-pressed="true" title="Pan and select (V)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 13V5.5a1.5 1.5 0 013 0V12m0-1V4.5a1.5 1.5 0 013 0V11m0-.5V6a1.5 1.5 0 013 0v8a7 7 0 01-7 7h-1a6 6 0 01-5-2.7L3.6 14a1.5 1.5 0 012.4-1.8L8 15"/></svg></button>
@@ -235,6 +270,11 @@ button, input, select { font: inherit; color: inherit; }
       <canvas id="cv"></canvas>
       <svg class="ovl" id="svg" xmlns="http://www.w3.org/2000/svg"></svg>
       <div class="banner" id="banner" hidden></div>
+      <div class="mkbar" id="mkBar" hidden></div>
+      <div class="texted" id="textEd" hidden>
+        <textarea id="teText" rows="3" aria-label="Text box content" placeholder="Type the note"></textarea>
+        <div class="row"><label for="teSize">Size</label><select id="teSize"><option>7</option><option selected>9</option><option>12</option><option>16</option><option>24</option></select><span class="spacer"></span><button type="button" class="btn" id="teCancel">Cancel</button><button type="button" class="btn primary" id="teDone">Done</button></div>
+      </div>
       <div class="busy" id="busy" hidden><div class="spin"></div><span id="busyMsg">Working</span></div>
       <div class="empty" id="empty">
         <div class="drop" id="drop">
@@ -254,12 +294,18 @@ button, input, select { font: inherit; color: inherit; }
     <div class="scrim" id="scrim"></div>
     <aside class="side" id="side">
       <div>
+        <div class="sheetctl" id="sheetCtl" hidden>
+          <label class="op" for="fadeIn"><span>Fade sheet</span><input type="range" id="fadeIn" min="0" max="0.9" step="0.05" value="0" aria-label="Fade the current sheet"><output id="fadeOut">0%</output></label>
+          <label class="tgl" for="annIn"><input type="checkbox" id="annIn" checked> Show markups already in the PDF</label>
+        </div>
         <div class="sec-h"><span id="ovTitle">Overlays</span><span class="spacer"></span><span class="ct" id="ovCount"></span></div>
         <div class="ovs" id="ovs"></div>
         <div id="mkList"></div>
       </div>
       <div class="sheets-h">
-        <div class="sec-h"><span>Sheets</span><span class="spacer"></span><span class="ct" id="shCount"></span></div>
+        <div class="sec-h"><span>Sheets</span><span class="spacer"></span><span class="ct" id="shCount"></span>
+          <button class="btn tiny" id="dupBtn" type="button" title="Duplicate the current sheet, with its overlays and markups">Duplicate</button>
+          <button class="btn tiny" id="blankBtn" type="button" title="Insert a blank sheet after the current sheet">+ Blank</button></div>
         <input class="search" id="search" type="search" placeholder="Filter by number or name" aria-label="Filter sheets">
       </div>
       <div class="list" id="list"></div>
@@ -273,6 +319,7 @@ button, input, select { font: inherit; color: inherit; }
   </footer>
 </div>
 <div class="toast" id="toast" hidden></div>
+<div class="rowmenu" id="rowMenu" hidden role="menu"></div>
 <div class="modal" id="expModal" hidden role="dialog" aria-modal="true" aria-labelledby="expTitle">
   <form class="dlg" id="expForm">
     <h2 id="expTitle">Export PDF</h2>
@@ -293,6 +340,7 @@ button, input, select { font: inherit; color: inherit; }
         <label class="opt"><input type="radio" name="files" value="one" id="fOne" checked><span>One PDF <small>Sheets in set order, with a bookmark per sheet</small></span><span></span></label>
         <label class="opt"><input type="radio" name="files" value="separate" id="fSep"><span>Separate PDF per sheet <small>Downloaded together as one .zip file</small></span><span></span></label>
       </fieldset>
+      <label class="tgl" for="keepAnn"><input type="checkbox" id="keepAnn" checked> Keep markups already in the PDF (Bluebeam markups and comments)</label>
     </div>
     <div class="foot"><span class="msg" id="expMsg"></span><button type="button" class="btn" id="expCancel">Cancel</button><button type="submit" class="btn primary" id="expGo">Export</button></div>
   </form>
@@ -1417,7 +1465,8 @@ button, input, select { font: inherit; color: inherit; }
   E.stampGeometry = function (baseVT, baseW, baseH, ovVT, ovW, ovH, o) {
     const A = E.alignMatrix(o);
     const crop = o.crop || [0, 0, ovW, ovH];
-    const corners = [[crop[0], crop[1]], [crop[2], crop[1]], [crop[2], crop[3]], [crop[0], crop[3]]].map(p => ap(A, p[0], p[1]));
+    const poly = o.cropPoly || [[crop[0], crop[1]], [crop[2], crop[1]], [crop[2], crop[3]], [crop[0], crop[3]]];
+    const corners = poly.map(p => ap(A, p[0], p[1]));
     let x0 = Math.max(0, Math.min(...corners.map(p => p[0]))), x1 = Math.min(baseW, Math.max(...corners.map(p => p[0])));
     let y0 = Math.max(0, Math.min(...corners.map(p => p[1]))), y1 = Math.min(baseH, Math.max(...corners.map(p => p[1])));
     if (x1 - x0 < 1 || y1 - y0 < 1) return null;
@@ -1427,7 +1476,7 @@ button, input, select { font: inherit; color: inherit; }
     const w = rect[2] - rect[0], h = rect[3] - rect[1];
     const toForm = mul([1, 0, 0, 1, -rect[0], -rect[1]], bInv); // base display -> form
     const M = mul(toForm, mul(A, ovVT)); // overlay native -> form
-    const clipPoly = (o.crop || o.rot) ? corners.map(p => ap(toForm, p[0], p[1])) : null;
+    const clipPoly = (o.crop || o.cropPoly || o.rot) ? corners.map(p => ap(toForm, p[0], p[1])) : null;
     return { rect, w, h, M, clipPoly, displayBox: [x0, y0, x1, y1] };
   };
 
@@ -1465,7 +1514,7 @@ button, input, select { font: inherit; color: inherit; }
   }
   function signedArea(p) { let a = 0; for (let i = 0; i < p.length; i++) { const q = p[(i + 1) % p.length]; a += p[i][0] * q[1] - q[0] * p[i][1]; } return a / 2; }
 
-  function addMarkups(PDFLib, out, page, baseVT, markups, author, now) {
+  function addMarkups(PDFLib, out, page, baseVT, markups, author, now, pageRotate) {
     const { PDFName, PDFString, PDFHexString, PDFNumber } = PDFLib;
     const ctx = out.context; const bInv = inv(baseVT);
     const refs = [];
@@ -1494,7 +1543,7 @@ button, input, select { font: inherit; color: inherit; }
         const [x0d, y0d, x1d, y1d] = mk.box; // display coords
         const p0 = ap(bInv, x0d, y0d), p1 = ap(bInv, x1d, y1d);
         const rect = [Math.min(p0[0], p1[0]), Math.min(p0[1], p1[1]), Math.max(p0[0], p1[0]), Math.max(p0[1], p1[1])];
-        const w = rect[2] - rect[0], h = rect[3] - rect[1];
+        const w = Math.abs(x1d - x0d), h = Math.abs(y1d - y0d); // box size as seen on screen
         const fs = mk.size || 9; const hex = '#' + col.map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join('').toUpperCase();
         // naive wrap for the appearance (Revu re-flows using /RC and /DS)
         const font = mk._font; const lines = [];
@@ -1503,14 +1552,18 @@ button, input, select { font: inherit; color: inherit; }
           for (const word of para.split(/\s+/)) { const t = cur ? cur + ' ' + word : word; if (font && font.widthOfTextAtSize(t, fs) > w - 4 && cur) { lines.push(cur); cur = word; } else cur = t; }
           lines.push(cur);
         }
-        let body = `${C} RG\n1 w\n${n3(rect[0] + 0.5)} ${n3(rect[1] + 0.5)} ${n3(w - 1)} ${n3(h - 1)} re S\nq ${n3(rect[0] + 1)} ${n3(rect[1] + 1)} ${n3(w - 2)} ${n3(h - 2)} re W n\nBT\n${C} rg\n/Helv ${fs} Tf\n${n3(rect[0] + 2)} ${n3(rect[3] - fs * 1.2)} Td\n`;
+        // the appearance is drawn upright in screen orientation; its Matrix turns it to the page's own
+        // orientation, so text reads correctly on rotated sheets
+        let body = `${C} RG\n1 w\n0.5 0.5 ${n3(w - 1)} ${n3(h - 1)} re S\nq 1 1 ${n3(w - 2)} ${n3(h - 2)} re W n\nBT\n${C} rg\n/Helv ${fs} Tf\n2 ${n3(h - fs * 1.2)} Td\n`;
         lines.forEach((l, i) => { body += (i ? `0 ${n3(-fs * 1.2)} Td\n` : '') + `(${esc(l)}) Tj\n`; });
         body += 'ET\nQ\n';
+        const Mx = [bInv[0], bInv[1], -bInv[2], -bInv[3], 0, 0].map(v => Math.round(v * 1e6) / 1e6);
         const helv = ctx.obj({ Type: 'Font', Subtype: 'Type1', BaseFont: 'Helvetica', Encoding: 'WinAnsiEncoding' });
-        const apS = ctx.stream(body, { Type: 'XObject', Subtype: 'Form', BBox: rect, Matrix: [1, 0, 0, 1, 0, 0], Resources: { Font: { Helv: ctx.register(helv) } } });
+        const apS = ctx.stream(body, { Type: 'XObject', Subtype: 'Form', BBox: [0, 0, w, h], Matrix: Mx, Resources: { Font: { Helv: ctx.register(helv) } } });
         const xmlEsc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         const rc = `<?xml version="1.0"?><body xmlns="http://www.w3.org/1999/xhtml" xmlns:xfa="http://www.xfa.org/schema/xfa-data/1.0/" xfa:APIVersion="Acrobat:11.0.0" xfa:spec="2.0.2" style="font-size:${fs}pt;text-align:left;color:${hex};font-weight:normal;font-style:normal;font-family:'Arial Narrow';font-stretch:normal"><p dir="ltr"><span style="font-family:'Arial Narrow'">${xmlEsc(mk.text).replace(/\n/g, '</span></p><p dir="ltr"><span style="font-family:\'Arial Narrow\'">')}</span></p></body>`;
         dict = { Type: 'Annot', Subtype: 'FreeText', Rect: rect, DA: PDFString.of(`${C} rg /Helv ${fs} Tf`), DS: PDFString.of(`font: ${fs}pt 'Arial Narrow'; text-align:left; color:${hex}`), RC: PDFHexString.fromText(rc), Q: 0, BS: { S: 'S', W: 1 }, C: col, Subj: 'Text Box', AP: { N: ctx.register(apS) } };
+        if (pageRotate) dict.Rotate = pageRotate;
       } else continue;
       dict.T = PDFHexString.fromText(author); dict.F = 4; dict.NM = PDFString.of(uid()); dict.M = PDFString.of(now); dict.CreationDate = PDFString.of(now); dict.P = page.ref;
       if (mk.text && mk.type !== 'text') dict.Contents = PDFHexString.fromText(mk.text);
@@ -1527,6 +1580,20 @@ button, input, select { font: inherit; color: inherit; }
     const ctx = out.context;
     const bv = E.viewTransform(sh.view, sh.rotate || 0);
     const stampRefs = [];
+    if (sh.fade > 0) {
+      // fade = white Square markup at the bottom of the stack, so it dims the sheet but not the overlays or markups
+      const bInv = inv(bv.T);
+      const nat = [[0, 0], [bv.w, 0], [bv.w, bv.h], [0, bv.h]].map(p => ap(bInv, p[0], p[1]));
+      const r = [Math.min(...nat.map(p => p[0])), Math.min(...nat.map(p => p[1])), Math.max(...nat.map(p => p[0])), Math.max(...nat.map(p => p[1]))];
+      const f = Math.max(0, Math.min(0.95, sh.fade));
+      const GF = ctx.register(ctx.obj({ Type: 'ExtGState', CA: f, ca: f }));
+      const ap1 = ctx.register(ctx.stream(`q /GF gs 1 1 1 rg ${n3(r[0])} ${n3(r[1])} ${n3(r[2] - r[0])} ${n3(r[3] - r[1])} re f Q`, { Type: 'XObject', Subtype: 'Form', BBox: r, Matrix: [1, 0, 0, 1, 0, 0], Resources: { ExtGState: { GF } } }));
+      stampRefs.push(ctx.register(ctx.obj({
+        Type: 'Annot', Subtype: 'Square', Rect: r, IC: [1, 1, 1], C: [1, 1, 1], BS: { W: 0, S: 'S' }, CA: f, F: 4,
+        T: PDFHexString.fromText(author), Subj: PDFString.of('Fade'), Contents: PDFHexString.fromText(`Fade ${Math.round(f * 100)}%`),
+        NM: PDFString.of(uid()), M: PDFString.of(now), CreationDate: PDFString.of(now), AP: { N: ap1 }, P: page.ref
+      })));
+    }
     for (const o of (sh.overlays || [])) {
       const ov = E.viewTransform(o.view, o.rotate || 0);
       const g = E.stampGeometry(bv.T, bv.w, bv.h, ov.T, ov.w, ov.h, o);
@@ -1558,7 +1625,7 @@ button, input, select { font: inherit; color: inherit; }
     if (sh.markups && sh.markups.length) {
       if (!fontCache.helv) fontCache.helv = await out.embedFont(PDFLib.StandardFonts.Helvetica);
       for (const m of sh.markups) m._font = fontCache.helv;
-      markupRefs = addMarkups(PDFLib, out, page, bv.T, sh.markups, author, now);
+      markupRefs = addMarkups(PDFLib, out, page, bv.T, sh.markups, author, now, ((sh.rotate || 0) % 360 + 360) % 360);
     }
     const annots = page.node.lookup(PDFName.of('Annots'));
     const existing = [];
@@ -1592,23 +1659,33 @@ button, input, select { font: inherit; color: inherit; }
   // Some stapled sets carry malformed entries in /Annots (e.g. a /Page dict whose /Parent is an annotation).
   // pdf-lib crashes copying those ("ascend is not a function"), so drop anything that is not an annotation,
   // and detach /P so copying a page never drags other page objects along.
-  function sanitizeAnnots(PDFLib, src, pn) {
+  // Returns a restore() function: the loaded source document is reused between exports, so changes are undone after copying.
+  function sanitizeAnnots(PDFLib, src, pn, keepExisting) {
     const { PDFName, PDFArray, PDFDict } = PDFLib;
     const node = src.getPage(pn - 1).node;
-    const annots = node.lookup(PDFName.of('Annots'));
-    if (!(annots instanceof PDFArray)) { if (annots) node.delete(PDFName.of('Annots')); return; }
+    const K = PDFName.of('Annots');
+    const raw = node.get(K);
+    const restore = () => { if (raw === undefined) node.delete(K); else node.set(K, raw); };
+    const annots = node.lookup(K);
+    if (!(annots instanceof PDFArray)) { if (annots) node.delete(K); return restore; }
     const keep = [];
-    for (let i = 0; i < annots.size(); i++) {
+    if (keepExisting !== false) for (let i = 0; i < annots.size(); i++) {
       const ref = annots.get(i); let d = null;
       try { d = src.context.lookup(ref); } catch (e) { d = null; }
       if (!(d instanceof PDFDict)) continue;
       const type = d.lookup(PDFName.of('Type')); const sub = d.lookup(PDFName.of('Subtype'));
       if (type && type.asString && type.asString() !== '/Annot') continue;
       if (!sub) continue;
+      // links that jump to other pages would drag those pages into the copy
+      if (sub.asString && sub.asString() === '/Link') {
+        const dest = d.lookup(PDFName.of('Dest')); const act = d.lookup(PDFName.of('A'));
+        if (dest instanceof PDFArray || (act instanceof PDFDict && act.lookup(PDFName.of('D')) instanceof PDFArray)) continue;
+      }
       d.delete(PDFName.of('P'));
       keep.push(ref);
     }
-    node.set(PDFName.of('Annots'), src.context.obj(keep));
+    node.set(K, src.context.obj(keep));
+    return restore;
   }
   let patched = false;
   function patchPdfLib(PDFLib) {
@@ -1631,13 +1708,18 @@ button, input, select { font: inherit; color: inherit; }
     const out = await PDFLib.PDFDocument.create({ updateMetadata: false });
     const now = pdfDate(new Date());
     patchPdfLib(PDFLib);
-    for (const sh of sheets) sanitizeAnnots(PDFLib, src, sh.pn);
-    const pages = await out.copyPages(src, sheets.map(s => s.pn - 1));
-    const fontCache = {};
-    for (let i = 0; i < pages.length; i++) {
-      out.addPage(pages[i]);
-      await decorate(PDFLib, out, src, pages[i], sheets[i], author, now, fontCache);
-      if (opts.onProgress) await opts.onProgress(i + 1, pages.length);
+    const withSrc = sheets.filter(s => s.pn);
+    const restores = [...new Set(withSrc.map(s => s.pn))].map(pn => sanitizeAnnots(PDFLib, src, pn, opts.keepExisting));
+    let copied;
+    try { copied = withSrc.length ? await out.copyPages(src, withSrc.map(s => s.pn - 1)) : []; }
+    finally { restores.forEach(r => r()); }
+    const fontCache = {}; const pages = []; let j = 0;
+    for (let i = 0; i < sheets.length; i++) {
+      const sh = sheets[i];
+      const page = sh.pn ? out.addPage(copied[j++]) : out.addPage([sh.view[2] - sh.view[0], sh.view[3] - sh.view[1]]);
+      pages.push(page);
+      await decorate(PDFLib, out, src, page, sh, author, now, fontCache);
+      if (opts.onProgress) await opts.onProgress(i + 1, sheets.length);
     }
     if (pages.length > 1) addOutline(PDFLib, out, pages, sheets.map(s => s.title || s.name || ('Page ' + s.pn)));
     out.setTitle(opts.title || (sheets.length === 1 ? `${sheets[0].name || 'Sheet'} overlay` : 'Overlay set'));
@@ -1698,10 +1780,12 @@ button, input, select { font: inherit; color: inherit; }
   const sv = (tag, attrs) => { const n = document.createElementNS(SVGNS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; };
   const mul = E.mul, ap = E.ap, inv = E.inv;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const clone = (o) => JSON.parse(JSON.stringify(o));
   const ICON = {
     eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
     eyeOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3l18 18M10.6 5.1A10 10 0 0112 5c6.5 0 10 7 10 7a17 17 0 01-3.2 4.2M6.6 6.6C3.8 8.4 2 12 2 12s3.5 7 10 7a9.6 9.6 0 004.4-1.1"/></svg>',
     x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="8" y="8" width="12" height="12" rx="1.5"/><path d="M16 8V5.5A1.5 1.5 0 0014.5 4h-9A1.5 1.5 0 004 5.5v9A1.5 1.5 0 005.5 16H8"/></svg>',
     sliders: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>',
     up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 15l6-6 6 6"/></svg>',
     down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg>',
@@ -1715,15 +1799,17 @@ button, input, select { font: inherit; color: inherit; }
   PDFJS.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
   // ---------------- state ----------------
+  // Sheets are the user's working list. Original pages use their page number as key;
+  // duplicated and blank sheets get string keys. `src` is the PDF page a sheet shows (null for blank).
   const S = {
-    file: null, doc: null, sheets: [], basePn: null, mode: 'pan',
-    overlays: {}, markups: {}, sel: null, selMk: null,
+    file: null, doc: null, sheets: [], byKey: new Map(), base: null, mode: 'pan',
+    overlays: {}, markups: {}, fade: {}, showAnn: true, sel: null, selMk: null,
     view: { z: 1, x: 0, y: 0 }, views: {}, solo: null,
-    cache: {}, info: {}, prev: new Map(), tiles: new Map(), hiGen: 0,
+    cache: {}, info: {}, prev: new Map(), tiles: new Map(), hiGen: 0, bm: {},
     twopt: null, dpr: 1, colorIdx: 0, bmGen: 0, alignQueue: Promise.resolve(), step: 1,
-    filter: '', openAdj: new Set()
+    filter: '', openAdj: new Set(), hist: { undo: [], redo: [], key: null, t: 0 }, seq: 1
   };
-  window.__overlayState = S; // for debugging/tests
+  window.__overlayState = S;
 
   const stage = $('#stage'), cv = $('#cv'), ctx = cv.getContext('2d'), svg = $('#svg');
   const scratch = document.createElement('canvas'), sctx = scratch.getContext('2d');
@@ -1734,14 +1820,18 @@ button, input, select { font: inherit; color: inherit; }
   function status(msg) { $('#stMsg').textContent = msg; }
   let busyN = 0;
   function busy(on, msg) { busyN += on ? 1 : -1; if (busyN < 0) busyN = 0; $('#busy').hidden = busyN === 0; if (on && msg) $('#busyMsg').textContent = msg; }
-  const sheet = (pn) => S.sheets[pn - 1];
-  const label = (pn) => { const b = sheet(pn); return b && b.num ? b.num : 'Page ' + pn; };
-  const fullLabel = (pn) => { const b = sheet(pn); return (b && b.num ? b.num : 'Page ' + pn) + (b && b.name ? ' ' + b.name : ''); };
+  const uid = (p) => p + (S.seq++) + Math.random().toString(36).slice(2, 6);
+  const sheetBy = (key) => S.byKey.get(key) || null;
+  const srcOf = (key) => { const b = sheetBy(key); return b ? b.src : null; };
+  const label = (key) => { const b = sheetBy(key); if (!b) return 'Page ' + key; return b.num || (b.src ? 'Page ' + b.src : 'Blank'); };
+  const fullLabel = (key) => { const b = sheetBy(key); return label(key) + (b && b.name ? ' ' + b.name : ''); };
   const hex2rgb = (h) => { const n = parseInt(h.slice(1), 16); return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; };
-  const curOvs = () => (S.overlays[S.basePn] || (S.overlays[S.basePn] = []));
-  const curMks = () => (S.markups[S.basePn] || (S.markups[S.basePn] = []));
+  const curOvs = () => (S.overlays[S.base] || (S.overlays[S.base] = []));
+  const curMks = () => (S.markups[S.base] || (S.markups[S.base] = []));
   const selOv = () => curOvs().find(o => o.id === S.sel) || null;
-  const shownPn = () => S.solo || S.basePn;
+  const selMk = () => curMks().find(m => m.id === S.selMk) || null;
+  const idxOf = (key) => S.sheets.findIndex(b => b.key === key);
+  function reindex() { S.byKey = new Map(S.sheets.map(b => [b.key, b])); }
   function alignM(o) { return E.alignMatrix(o); }
 
   async function pageInfo(pn) {
@@ -1750,6 +1840,59 @@ button, input, select { font: inherit; color: inherit; }
     const vp = page.getViewport({ scale: 1 });
     return (S.info[pn] = { page, W: vp.width, H: vp.height, view: page.view.slice(), rotate: page.rotate });
   }
+  // display info for a sheet (blank sheets are synthetic)
+  async function sheetInfo(key) {
+    const b = sheetBy(key); if (!b) return null;
+    if (b.src) return pageInfo(b.src);
+    return { page: null, W: b.W, H: b.H, view: [0, 0, b.W, b.H], rotate: 0, blank: true };
+  }
+  function sheetInfoSync(key) { const b = sheetBy(key); if (!b) return null; if (b.src) return S.info[b.src] || null; return { page: null, W: b.W, H: b.H, view: [0, 0, b.W, b.H], rotate: 0, blank: true }; }
+  // what the canvas currently shows: {pn (pdf page or null), info, role}
+  function shown() {
+    if (S.solo) return { pn: S.solo, info: S.info[S.solo], role: 'ov' };
+    const b = sheetBy(S.base); if (!b) return null;
+    return { pn: b.src, info: sheetInfoSync(S.base), role: 'base' };
+  }
+
+  // ---------------- crop geometry (overlay display coords) ----------------
+  function normCrop(c) { if (!c) return null; if (Array.isArray(c)) return { cx: (c[0] + c[2]) / 2, cy: (c[1] + c[3]) / 2, w: c[2] - c[0], h: c[3] - c[1], a: 0 }; return c; }
+  function cropPoly(c) {
+    c = normCrop(c); if (!c) return null;
+    const ca = Math.cos(c.a), sa = Math.sin(c.a), hw = c.w / 2, hh = c.h / 2;
+    return [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]].map(([x, y]) => [c.cx + ca * x - sa * y, c.cy + sa * x + ca * y]);
+  }
+  const toLocal = (c, q) => { const dx = q[0] - c.cx, dy = q[1] - c.cy, ca = Math.cos(-c.a), sa = Math.sin(-c.a); return [ca * dx - sa * dy, sa * dx + ca * dy]; };
+  const fromLocal = (c, l) => { const ca = Math.cos(c.a), sa = Math.sin(c.a); return [c.cx + ca * l[0] - sa * l[1], c.cy + sa * l[0] + ca * l[1]]; };
+
+  // ---------------- undo / redo ----------------
+  function snapshot() {
+    return clone({ sheets: S.sheets, overlays: S.overlays, markups: S.markups, fade: S.fade, base: S.base });
+  }
+  // call BEFORE a change; changes sharing a key within a second (slider drags, nudges) collapse into one step
+  function commit(key) {
+    const now = Date.now(), H = S.hist;
+    if (key && key === H.key && now - H.t < 1000) { H.t = now; return; }
+    H.undo.push(snapshot()); if (H.undo.length > 120) H.undo.shift();
+    H.redo.length = 0; H.key = key || null; H.t = now; syncHist();
+  }
+  function restore(snap) {
+    S.sheets = snap.sheets; reindex();
+    for (const b of S.sheets) if (b.src && b.key === b.src && !b.userEdited && S.bm[b.src]) Object.assign(b, S.bm[b.src]);
+    S.overlays = snap.overlays; S.markups = snap.markups; S.fade = snap.fade || {};
+    if (!sheetBy(snap.base)) snap.base = S.sheets[0] && S.sheets[0].key;
+    const changedBase = S.base !== snap.base;
+    S.base = snap.base;
+    if (!curOvs().some(o => o.id === S.sel)) S.sel = null;
+    if (!curMks().some(m => m.id === S.selMk)) S.selMk = null;
+    closeTextEditor(false);
+    if (changedBase) { const inf = sheetInfoSync(S.base); if (S.views[S.base]) S.view = Object.assign({}, S.views[S.base]); else if (inf) fit(inf); }
+    renderAll(); ensurePreviews(); draw(); scheduleHiRes();
+    // an alignment that was still running when the snapshot was taken: run it again
+    for (const k in S.overlays) for (const o of S.overlays[k]) if (o.status === 'pending') runAuto(o);
+  }
+  function undo() { const H = S.hist; if (!H.undo.length) return; H.redo.push(snapshot()); restore(H.undo.pop()); H.key = null; syncHist(); status('Undone.'); }
+  function redo() { const H = S.hist; if (!H.redo.length) return; H.undo.push(snapshot()); restore(H.redo.pop()); H.key = null; syncHist(); status('Redone.'); }
+  function syncHist() { $('#undoBtn').disabled = !S.hist.undo.length; $('#redoBtn').disabled = !S.hist.redo.length; }
 
   // ---------------- loading ----------------
   async function openFile(file) {
@@ -1757,8 +1900,10 @@ button, input, select { font: inherit; color: inherit; }
     if (!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') { toast('That file is not a PDF.'); return; }
     S.bmGen++;
     try { if (S.doc) await S.doc.destroy(); } catch (e) { }
-    Object.assign(S, { file, doc: null, sheets: [], basePn: null, overlays: {}, markups: {}, sel: null, selMk: null, views: {}, solo: null, cache: {}, info: {}, twopt: null, colorIdx: 0 });
-    S.prev.clear(); S.tiles.clear();
+    closeTextEditor(false);
+    Object.assign(S, { file, doc: null, sheets: [], base: null, overlays: {}, markups: {}, fade: {}, sel: null, selMk: null, views: {}, solo: null, cache: {}, info: {}, bm: {}, twopt: null, colorIdx: 0, libDoc: null });
+    S.hist = { undo: [], redo: [], key: null, t: 0 }; syncHist();
+    S.prev.clear(); S.tiles.clear(); reindex();
     busy(true, 'Opening ' + file.name);
     try {
       const buf = await file.arrayBuffer();
@@ -1767,13 +1912,14 @@ button, input, select { font: inherit; color: inherit; }
       busy(false); toast('Could not open this PDF: ' + (e && e.message || e)); return;
     }
     busy(false);
-    for (let i = 1; i <= S.doc.numPages; i++) S.sheets.push({ pn: i, num: null, name: null, src: 'page' });
+    for (let i = 1; i <= S.doc.numPages; i++) S.sheets.push({ key: i, src: i, num: null, name: null, from: 'page' });
+    reindex();
     $('#empty').hidden = true;
-    for (const id of ['#sheetCell', '#navGrp', '#toolGrp', '#zoomGrp']) $(id).hidden = false;
+    for (const id of ['#sheetCell', '#navGrp', '#histGrp', '#toolGrp', '#zoomGrp', '#sheetCtl']) $(id).hidden = false;
     $('#exportBtn').disabled = false;
     renderList();
     await setBase(1);
-    if (narrow()) setDrawer(true);
+    if (narrow()) setDrawer(true); // only on first load; page navigation never opens it
     buildBookmarks();
   }
 
@@ -1783,7 +1929,10 @@ button, input, select { font: inherit; color: inherit; }
     try {
       await E.buildBookmarks(S.doc, (list, i, n) => {
         if (gen !== S.bmGen) return;
-        for (const b of list) { const cur = S.sheets[b.pn - 1]; if (cur.userEdited) continue; Object.assign(cur, { num: b.num, name: b.name, src: b.src, W: b.W, H: b.H }); }
+        for (const b of list) {
+          S.bm[b.pn] = { num: b.num, name: b.name, from: b.src };
+          const cur = sheetBy(b.pn); if (cur && !cur.userEdited) Object.assign(cur, S.bm[b.pn]);
+        }
         renderList(); renderHeader(); renderOverlays();
         status(i < n ? `Reading sheets ${i} of ${n}` : `${n} sheets bookmarked`);
       }, { cancelled: () => gen !== S.bmGen });
@@ -1791,28 +1940,30 @@ button, input, select { font: inherit; color: inherit; }
   }
 
   // ---------------- base sheet ----------------
-  async function setBase(pn) {
-    if (!S.doc || pn < 1 || pn > S.doc.numPages) return;
-    if (S.basePn) S.views[S.basePn] = Object.assign({}, S.view);
-    endModes();
-    S.basePn = pn; S.sel = null; S.selMk = null; S.solo = null;
-    const inf = await pageInfo(pn);
-    if (S.views[pn]) S.view = Object.assign({}, S.views[pn]); else fit(inf);
-    renderHeader(); renderList(); renderOverlays(); renderMarkupList();
-    draw(); ensurePreviews();
-    const li = document.querySelector(`.sh[data-pn="${pn}"]`); if (li) li.scrollIntoView({ block: 'nearest' });
+  async function setBase(key) {
+    if (!S.doc || !sheetBy(key)) return;
+    if (S.base != null) S.views[S.base] = Object.assign({}, S.view);
+    endModes(); closeTextEditor(true);
+    S.base = key; S.sel = null; S.selMk = null; S.solo = null;
+    const inf = await sheetInfo(key);
+    if (S.views[key]) S.view = Object.assign({}, S.views[key]); else fit(inf);
+    renderAll(); draw(); ensurePreviews(); scheduleHiRes();
+    scrollListTo(key);
   }
+  function stepSheet(d) { const i = idxOf(S.base); const n = S.sheets[i + d]; if (n) setBase(n.key); }
   function fit(inf) {
-    inf = inf || S.info[shownPn()]; if (!inf) return;
+    const sh = shown(); inf = inf || (sh && sh.info); if (!inf) return;
     const r = stage.getBoundingClientRect(); const pad = 24;
     const z = Math.min((r.width - 2 * pad) / inf.W, (r.height - 2 * pad) / inf.H);
     S.view = { z, x: (r.width - z * inf.W) / 2, y: (r.height - z * inf.H) / 2 };
     afterView();
   }
+  function renderAll() { renderHeader(); renderList(); renderOverlays(); renderMarkupList(); renderSheetCtl(); }
 
   // ---------------- previews and tiles ----------------
   function getPreview(pn, role) {
-    const key = role + ':' + pn;
+    const ann = role === 'base' && S.showAnn;
+    const key = role + ':' + pn + ':' + (ann ? 1 : 0);
     if (S.prev.has(key)) { const v = S.prev.get(key); S.prev.delete(key); S.prev.set(key, v); return v; }
     const v = { ready: false, cv: null, k: 1 };
     v.promise = (async () => {
@@ -1820,8 +1971,7 @@ button, input, select { font: inherit; color: inherit; }
       const k = Math.min(1.6, 2600 / Math.max(inf.W, inf.H));
       const vp = inf.page.getViewport({ scale: k });
       const c = document.createElement('canvas'); c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
-      const cx = c.getContext('2d');
-      await inf.page.render({ canvasContext: cx, viewport: vp, annotationMode: role === 'base' ? PDFJS.AnnotationMode.ENABLE : PDFJS.AnnotationMode.DISABLE }).promise;
+      await inf.page.render({ canvasContext: c.getContext('2d'), viewport: vp, annotationMode: ann ? PDFJS.AnnotationMode.ENABLE : PDFJS.AnnotationMode.DISABLE }).promise;
       Object.assign(v, { ready: true, cv: c, k }); draw();
     })().catch(() => { });
     S.prev.set(key, v);
@@ -1829,21 +1979,22 @@ button, input, select { font: inherit; color: inherit; }
     return v;
   }
   function ensurePreviews() {
-    if (!S.basePn) return;
-    getPreview(shownPn(), S.solo ? 'ov' : 'base');
+    const sh = shown(); if (!sh) return;
+    if (sh.pn) getPreview(sh.pn, sh.role);
     if (!S.solo) for (const o of curOvs()) if (o.visible) getPreview(o.pn, 'ov');
   }
 
   let hiTimer = 0;
   function scheduleHiRes() { clearTimeout(hiTimer); hiTimer = setTimeout(runHiRes, 220); }
+  const baseTileKey = (pn) => 'base:' + pn + ':' + (S.showAnn ? 1 : 0);
   async function runHiRes() {
     const gen = ++S.hiGen;
-    if (!S.basePn) return;
+    const sh = shown(); if (!sh) return;
     const W = cv.width, H = cv.height, VD = devM();
     const layers = [];
     if (S.solo) layers.push({ key: 'solo:' + S.solo, pn: S.solo, M: VD, A: null, ann: false });
     else {
-      layers.push({ key: 'base:' + S.basePn, pn: S.basePn, M: VD, A: null, ann: true });
+      if (sh.pn) layers.push({ key: baseTileKey(sh.pn), pn: sh.pn, M: VD, A: null, ann: S.showAnn });
       for (const o of curOvs()) if (o.visible && o.ready) { const A = alignM(o); layers.push({ key: 'ov:' + o.id, pn: o.pn, M: mul(VD, A), A, ann: false }); }
     }
     for (const L of layers) {
@@ -1868,7 +2019,6 @@ button, input, select { font: inherit; color: inherit; }
   }
   const sameM = (a, b) => a && b && a.every((v, i) => Math.abs(v - b[i]) < 1e-6);
   const sameA = (a, b) => (!a && !b) || (a && b && a.every((v, i) => Math.abs(v - b[i]) < 1e-9));
-  function cancelHi() { S.hiGen++; try { S.curTask && S.curTask.cancel(); } catch (e) { } }
 
   // ---------------- drawing ----------------
   function devM() { const d = S.dpr, v = S.view; return [v.z * d, 0, 0, v.z * d, v.x * d, v.y * d]; }
@@ -1887,23 +2037,26 @@ button, input, select { font: inherit; color: inherit; }
     const W = cv.width, H = cv.height;
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
     ctx.fillStyle = cssVar('--desk') || '#c7ccd1'; ctx.fillRect(0, 0, W, H);
-    const pn = shownPn(); const inf = pn && S.info[pn];
+    const sh = shown(); const inf = sh && sh.info;
     if (!inf) { drawSvg(); return; }
     const VD = devM();
-    // paper
     ctx.save(); ctx.setTransform(...VD); ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 12 * S.dpr; ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, inf.W, inf.H); ctx.restore();
-    const role = S.solo ? 'ov' : 'base';
-    const pv = getPreview(pn, role);
-    if (pv.ready) { ctx.setTransform(...mul(VD, [1 / pv.k, 0, 0, 1 / pv.k, 0, 0])); ctx.drawImage(pv.cv, 0, 0); }
-    drawTile(ctx, S.tiles.get((S.solo ? 'solo:' : 'base:') + pn), VD, null, [inf.W, inf.H]);
+    if (sh.pn) {
+      const pv = getPreview(sh.pn, sh.role);
+      if (pv.ready) { ctx.setTransform(...mul(VD, [1 / pv.k, 0, 0, 1 / pv.k, 0, 0])); ctx.drawImage(pv.cv, 0, 0); }
+      drawTile(ctx, S.tiles.get(S.solo ? 'solo:' + S.solo : baseTileKey(sh.pn)), VD, null, [inf.W, inf.H]);
+    }
     if (!S.solo) {
+      const f = S.fade[S.base] || 0;
+      if (f > 0) { ctx.setTransform(...VD); ctx.fillStyle = `rgba(255,255,255,${f})`; ctx.fillRect(0, 0, inf.W, inf.H); }
       for (const o of curOvs()) {
         if (!o.visible || !o.ready) continue;
         const A = alignM(o), VDA = mul(VD, A);
         sctx.setTransform(1, 0, 0, 1, 0, 0); sctx.globalCompositeOperation = 'source-over'; sctx.globalAlpha = 1;
         sctx.fillStyle = '#fff'; sctx.fillRect(0, 0, W, H);
         sctx.save();
-        if (o.crop) { sctx.setTransform(...VDA); sctx.beginPath(); sctx.rect(o.crop[0], o.crop[1], o.crop[2] - o.crop[0], o.crop[3] - o.crop[1]); sctx.clip(); }
+        const poly = cropPoly(o.crop);
+        if (poly) { sctx.setTransform(...VDA); sctx.beginPath(); poly.forEach((p, i) => i ? sctx.lineTo(p[0], p[1]) : sctx.moveTo(p[0], p[1])); sctx.closePath(); sctx.clip(); }
         const op = getPreview(o.pn, 'ov');
         if (op.ready) { sctx.setTransform(...mul(VDA, [1 / op.k, 0, 0, 1 / op.k, 0, 0])); sctx.drawImage(op.cv, 0, 0); }
         drawTile(sctx, S.tiles.get('ov:' + o.id), VD, A);
@@ -1919,8 +2072,6 @@ button, input, select { font: inherit; color: inherit; }
     }
     drawSvg();
   }
-  // Draw a sharp tile over the low-res preview. The preview is whited out under the tile first,
-  // otherwise its blur shows through as a haze around every line.
   function drawTile(c, t, VD, A, pageWH) {
     if (!t || !sameA(t.A, A)) return;
     const r = VD[0] / t.VD[0]; if (r < 0.2 || r > 5) return;
@@ -1932,22 +2083,22 @@ button, input, select { font: inherit; color: inherit; }
   }
   function drawGridDebug(VD) {
     const o = selOv(); if (!o || !o.showGrid || !o.ready) return;
-    const B = S.cache[S.basePn], O = S.cache[o.pn]; if (!B || !O) return;
-    const inf = S.info[S.basePn];
+    const bp = srcOf(S.base); const B = bp && S.cache[bp], O = S.cache[o.pn]; if (!O) return;
+    const inf = sheetInfoSync(S.base);
     ctx.save(); ctx.setTransform(...VD); ctx.lineWidth = 1.2 / S.view.z;
     const A = alignM(o);
     const line = (x0, y0, x1, y1, M) => { const a = M ? ap(M, x0, y0) : [x0, y0], b = M ? ap(M, x1, y1) : [x1, y1]; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); };
-    ctx.setLineDash([8 / S.view.z, 4 / S.view.z]); ctx.strokeStyle = 'rgba(10,108,102,.85)';
-    for (const l of B.grid.cols) line(l.pos, 0, l.pos, inf.H); for (const l of B.grid.rows) line(0, l.pos, inf.W, l.pos);
+    if (B) { ctx.setLineDash([8 / S.view.z, 4 / S.view.z]); ctx.strokeStyle = 'rgba(10,108,102,.85)'; for (const l of B.grid.cols) line(l.pos, 0, l.pos, inf.H); for (const l of B.grid.rows) line(0, l.pos, inf.W, l.pos); }
     ctx.setLineDash([]); ctx.strokeStyle = o.color; ctx.lineWidth = 2 / S.view.z;
     const oi = S.info[o.pn];
     for (const l of O.grid.cols) line(l.pos, 0, l.pos, oi.H, A); for (const l of O.grid.rows) line(0, l.pos, oi.W, l.pos, A);
     ctx.restore();
   }
 
-  // ---------------- SVG overlay (markups, crop outline, picks) ----------------
+  // ---------------- SVG layer (markups, crop, handles, picks) ----------------
   function toScreen(p) { const v = S.view; return [v.z * p[0] + v.x, v.z * p[1] + v.y]; }
   function toPage(sx, sy) { const v = S.view; return [(sx - v.x) / v.z, (sy - v.y) / v.z]; }
+  const HR = () => (matchMedia('(pointer: coarse)').matches ? 11 : 6); // handle radius in px
   function cloudD(pts, r) {
     const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length, cy = pts.reduce((a, p) => a + p[1], 0) / pts.length;
     let d = '';
@@ -1964,34 +2115,47 @@ button, input, select { font: inherit; color: inherit; }
     }
     return d + 'Z';
   }
+  function handle(x, y, id, cls, shape) {
+    const r = HR(); const acc = cssVar('--accent');
+    if (shape === 'sq') return sv('rect', { class: 'hdl ' + (cls || ''), 'data-h': id, x: x - r * 0.7, y: y - r * 0.7, width: r * 1.4, height: r * 1.4, fill: '#fff', stroke: acc, 'stroke-width': 1.5 });
+    return sv('circle', { class: 'hdl ' + (cls || ''), 'data-h': id, cx: x, cy: y, r, fill: cls === 'rot' ? acc : '#fff', stroke: acc, 'stroke-width': 1.5 });
+  }
   function drawSvg() {
     while (svg.firstChild) svg.firstChild.remove();
-    if (!S.basePn) return;
+    if (S.base == null) { placeMkBar(); return; }
     const z = S.view.z;
     if (!S.solo) {
-      // crop outline of selected overlay
       const o = selOv();
-      if (o && o.ready && (o.crop || S.mode === 'crop')) {
+      if (o && o.ready) {
         const A = alignM(o); const inf = S.info[o.pn];
-        const c = o.crop || [0, 0, inf.W, inf.H];
-        const pts = [[c[0], c[1]], [c[2], c[1]], [c[2], c[3]], [c[0], c[3]]].map(p => toScreen(ap(A, p[0], p[1])));
-        svg.append(sv('polygon', { points: pts.map(p => p.join(',')).join(' '), fill: 'none', stroke: o.color, 'stroke-width': 1.5, 'stroke-dasharray': '6 4' }));
+        const poly = cropPoly(o.crop) || [[0, 0], [inf.W, 0], [inf.W, inf.H], [0, inf.H]];
+        const pts = poly.map(p => toScreen(ap(A, p[0], p[1])));
+        const ptsS = pts.map(p => p.join(',')).join(' ');
+        if (o.crop || S.mode === 'crop') svg.append(sv('polygon', { points: ptsS, fill: 'none', stroke: o.color, 'stroke-width': 1.5, 'stroke-dasharray': '6 4' }));
+        if (S.mode === 'crop' && o.crop) {
+          svg.append(sv('polygon', { class: 'hdl body', 'data-h': 'crop:m', points: ptsS, fill: 'rgba(10,108,102,.06)', stroke: 'none' }));
+          pts.forEach((p, i) => svg.append(handle(p[0], p[1], 'crop:c:' + i)));
+          // rotation handle: beyond the middle of the top edge
+          const tm = [(pts[0][0] + pts[1][0]) / 2, (pts[0][1] + pts[1][1]) / 2], bm = [(pts[3][0] + pts[2][0]) / 2, (pts[3][1] + pts[2][1]) / 2];
+          const L = Math.hypot(tm[0] - bm[0], tm[1] - bm[1]) || 1; const ux = (tm[0] - bm[0]) / L, uy = (tm[1] - bm[1]) / L;
+          const rh = [tm[0] + ux * 28, tm[1] + uy * 28];
+          svg.append(sv('line', { x1: tm[0], y1: tm[1], x2: rh[0], y2: rh[1], stroke: cssVar('--accent'), 'stroke-width': 1.2 }));
+          svg.append(handle(rh[0], rh[1], 'crop:r', 'rot'));
+        }
       }
-      // markups
       for (const m of curMks()) {
         const g = sv('g', { 'data-mk': m.id });
-        const sel = m.id === S.selMk;
         const sw = Math.max(1, (m.width || 2) * z);
         if (m.type === 'cloud') {
-          const pts = m.points.map(toScreen);
-          g.append(sv('path', { d: cloudD(pts, Math.max(3, 6 * z)), fill: 'none', stroke: REDLINE, 'stroke-width': sw, 'stroke-linejoin': 'round' }));
-          g.append(sv('path', { class: 'hit', d: cloudD(pts, Math.max(3, 6 * z)), fill: 'none', stroke: 'transparent', 'stroke-width': Math.max(10, sw + 8) }));
+          const pts = m.points.map(toScreen); const d = cloudD(pts, Math.max(3, 6 * z));
+          g.append(sv('path', { d, fill: 'none', stroke: REDLINE, 'stroke-width': sw, 'stroke-linejoin': 'round' }));
+          g.append(sv('path', { class: 'hit', d, fill: 'none', stroke: 'transparent', 'stroke-width': Math.max(14, sw + 10) }));
         } else if (m.type === 'arrow') {
           const a = toScreen(m.points[0]), b = toScreen(m.points[1]);
           const ang = Math.atan2(a[1] - b[1], a[0] - b[0]), hl = (10 + 2 * (m.width || 2)) * z;
           const h1 = [b[0] + hl * Math.cos(ang + 0.45), b[1] + hl * Math.sin(ang + 0.45)], h2 = [b[0] + hl * Math.cos(ang - 0.45), b[1] + hl * Math.sin(ang - 0.45)];
           g.append(sv('path', { d: `M${a[0]} ${a[1]} L${b[0]} ${b[1]} M${h1[0]} ${h1[1]} L${b[0]} ${b[1]} L${h2[0]} ${h2[1]}`, fill: 'none', stroke: REDLINE, 'stroke-width': sw, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
-          g.append(sv('path', { class: 'hit', d: `M${a[0]} ${a[1]} L${b[0]} ${b[1]}`, stroke: 'transparent', 'stroke-width': Math.max(10, sw + 8) }));
+          g.append(sv('path', { class: 'hit', d: `M${a[0]} ${a[1]} L${b[0]} ${b[1]}`, stroke: 'transparent', 'stroke-width': Math.max(14, sw + 10) }));
         } else if (m.type === 'text') {
           const p0 = toScreen([m.box[0], m.box[1]]), p1 = toScreen([m.box[2], m.box[3]]);
           const w = p1[0] - p0[0], h = p1[1] - p0[1];
@@ -1999,43 +2163,66 @@ button, input, select { font: inherit; color: inherit; }
           const fo = sv('foreignObject', { x: p0[0] + 2 * z, y: p0[1] + 1 * z, width: Math.max(1, w - 4 * z), height: Math.max(1, h - 2 * z) });
           fo.style.pointerEvents = 'none';
           const div = document.createElement('div');
-          div.style.cssText = `font:${9 * z}px/1.2 'Arial Narrow','IBM Plex Sans Condensed',sans-serif;color:${REDLINE};white-space:pre-wrap;word-break:break-word;overflow:hidden;height:100%`;
+          div.style.cssText = `font:${(m.size || 9) * z}px/1.2 'Arial Narrow','IBM Plex Sans Condensed',sans-serif;color:${REDLINE};white-space:pre-wrap;word-break:break-word;overflow:hidden;height:100%`;
           div.textContent = m.text; fo.append(div); g.append(fo);
         }
-        if (sel) { const bb = mkBox(m).map(toScreen); g.append(sv('rect', { x: bb[0][0] - 4, y: bb[0][1] - 4, width: bb[1][0] - bb[0][0] + 8, height: bb[1][1] - bb[0][1] + 8, fill: 'none', stroke: cssVar('--accent'), 'stroke-dasharray': '3 3' })); }
         svg.append(g);
       }
+      const m = selMk();
+      if (m && S.mode !== 'crop') {
+        const bb = mkBox(m).map(toScreen);
+        svg.append(sv('rect', { x: bb[0][0] - 5, y: bb[0][1] - 5, width: bb[1][0] - bb[0][0] + 10, height: bb[1][1] - bb[0][1] + 10, fill: 'none', stroke: cssVar('--accent'), 'stroke-dasharray': '3 3', 'pointer-events': 'none' }));
+        const big = (bb[1][0] - bb[0][0]) > 5 * HR() || (bb[1][1] - bb[0][1]) > 5 * HR();
+        if (!big) { /* too small on screen for handles: zoom in to edit points */ }
+        else if (m.type === 'cloud') {
+          const pts = m.points.map(toScreen);
+          pts.forEach((p, i) => { const q = pts[(i + 1) % pts.length]; svg.append(handle((p[0] + q[0]) / 2, (p[1] + q[1]) / 2, 'mk:e:' + i, 'mid', 'sq')); });
+          pts.forEach((p, i) => svg.append(handle(p[0], p[1], 'mk:v:' + i)));
+        } else if (m.type === 'arrow') m.points.map(toScreen).forEach((p, i) => svg.append(handle(p[0], p[1], 'mk:v:' + i)));
+        else if (m.type === 'text') { const b = m.box; [[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]]].map(toScreen).forEach((p, i) => svg.append(handle(p[0], p[1], 'mk:c:' + i))); }
+      }
     }
-    // rubber band
     if (S.drag && S.drag.band) {
       const a = S.drag.band[0], b = S.drag.band[1];
       if (S.mode === 'arrow') svg.append(sv('line', { x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: REDLINE, 'stroke-width': 2 }));
       else svg.append(sv('rect', { x: Math.min(a[0], b[0]), y: Math.min(a[1], b[1]), width: Math.abs(b[0] - a[0]), height: Math.abs(b[1] - a[1]), fill: S.mode === 'crop' ? 'rgba(10,108,102,.08)' : 'none', stroke: S.mode === 'crop' ? cssVar('--accent') : REDLINE, 'stroke-width': 1.5, 'stroke-dasharray': S.mode === 'crop' ? '6 4' : '' }));
     }
-    // two-point picks
     if (S.twopt) {
       const t = S.twopt; const picks = t.phase === 'ov' ? t.ovPts : t.basePts;
       picks.forEach((p, i) => { const s = toScreen(p); svg.append(sv('circle', { cx: s[0], cy: s[1], r: 7, fill: 'none', stroke: '#e0007a', 'stroke-width': 2 })); svg.append(sv('path', { d: `M${s[0] - 12} ${s[1]}H${s[0] + 12}M${s[0]} ${s[1] - 12}V${s[1] + 12}`, stroke: '#e0007a', 'stroke-width': 1 })); const tx = sv('text', { x: s[0] + 10, y: s[1] - 10, fill: '#e0007a', 'font-size': 13, 'font-family': 'IBM Plex Mono, monospace', 'font-weight': 600 }); tx.textContent = String(i + 1); svg.append(tx); });
       if (t.snap) { const s = toScreen(t.snap); svg.append(sv('rect', { x: s[0] - 6, y: s[1] - 6, width: 12, height: 12, fill: 'none', stroke: '#e0007a', 'stroke-width': 2 })); }
     }
+    placeMkBar();
   }
   function mkBox(m) {
-    if (m.type === 'text') return [[m.box[0], m.box[1]], [m.box[2], m.box[3]]];
+    if (m.type === 'text') return [[Math.min(m.box[0], m.box[2]), Math.min(m.box[1], m.box[3])], [Math.max(m.box[0], m.box[2]), Math.max(m.box[1], m.box[3])]];
     const xs = m.points.map(p => p[0]), ys = m.points.map(p => p[1]);
     return [[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]];
   }
+  // small action bar above the selected markup (works on touch, where double-click does not)
+  function placeMkBar() {
+    const bar = $('#mkBar'); const m = !S.solo && S.mode !== 'crop' && selMk();
+    if (!m || !$('#textEd').hidden || (S.drag && S.drag.moved)) { bar.hidden = true; return; }
+    if (bar.dataset.id !== m.id) {
+      bar.textContent = ''; bar.dataset.id = m.id;
+      if (m.type === 'text') bar.append(el('button', { class: 'btn', type: 'button', text: 'Edit text', onclick: () => openTextEditor(m) }));
+      bar.append(el('button', { class: 'btn', type: 'button', text: 'Delete', onclick: () => removeMarkup(m.id) }));
+    }
+    const bb = mkBox(m).map(toScreen); const r = stage.getBoundingClientRect();
+    bar.hidden = false;
+    const w = bar.offsetWidth, h = bar.offsetHeight;
+    bar.style.left = clamp((bb[0][0] + bb[1][0]) / 2 - w / 2, 4, r.width - w - 4) + 'px';
+    bar.style.top = clamp(bb[0][1] - h - 14, 4, r.height - h - 4) + 'px';
+  }
 
   // ---------------- view changes ----------------
-  function afterView() {
-    $('#zoomV').textContent = Math.round(S.view.z * 100 / (96 / 72)) + '%';
-    draw(); scheduleHiRes();
-  }
+  function afterView() { $('#zoomV').textContent = Math.round(S.view.z * 100 / (96 / 72)) + '%'; draw(); scheduleHiRes(); }
   function zoomAt(f, sx, sy) {
     const v = S.view; const nz = clamp(v.z * f, 0.02, 60); f = nz / v.z;
     v.x = sx - (sx - v.x) * f; v.y = sy - (sy - v.y) * f; v.z = nz; afterView();
   }
   stage.addEventListener('wheel', (e) => {
-    if (!S.basePn) return; e.preventDefault();
+    if (S.base == null) return; e.preventDefault();
     const r = stage.getBoundingClientRect();
     if (e.ctrlKey || !e.shiftKey) zoomAt(Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.0016)), e.clientX - r.left, e.clientY - r.top);
     else { S.view.x -= e.deltaX || e.deltaY; afterView(); }
@@ -2043,46 +2230,51 @@ button, input, select { font: inherit; color: inherit; }
 
   // ---------------- pointer interaction ----------------
   let spaceDown = false;
-  // ---- touch: two-finger pinch zoom and pan ----
   const ptrs = new Map();
-  function pinchState() {
-    const [a, b] = [...ptrs.values()];
-    return { d: Math.hypot(b.x - a.x, b.y - a.y) || 1, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
-  }
+  function pinchState() { const [a, b] = [...ptrs.values()]; return { d: Math.hypot(b.x - a.x, b.y - a.y) || 1, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 }; }
+  let lastTap = { t: 0, id: null };
   stage.addEventListener('pointerdown', (e) => {
-    if (!S.basePn) return;
+    if (S.base == null) return;
+    if (e.target.closest && e.target.closest('.texted, .mkbar')) return;
+    const r = stage.getBoundingClientRect(); const sx = e.clientX - r.left, sy = e.clientY - r.top;
     if (e.pointerType === 'touch') {
-      const r0 = stage.getBoundingClientRect();
-      ptrs.set(e.pointerId, { x: e.clientX - r0.left, y: e.clientY - r0.top });
-      try { stage.setPointerCapture(e.pointerId); } catch (err) { }
-      if (ptrs.size === 2) {
-        S.drag = null; stage.classList.remove('dragging');
-        const ps = pinchState(); S.pinch = Object.assign(ps, { z0: S.view.z, vx: S.view.x, vy: S.view.y }); drawSvg(); return;
-      }
+      ptrs.set(e.pointerId, { x: sx, y: sy });
+      if (ptrs.size === 2) { S.drag = null; stage.classList.remove('dragging'); S.pinch = Object.assign(pinchState(), { z0: S.view.z, vx: S.view.x, vy: S.view.y }); drawSvg(); return; }
       if (ptrs.size > 2) return;
     }
+    try { stage.setPointerCapture(e.pointerId); } catch (err) { }
     stage.focus({ preventScroll: true });
-    const r = stage.getBoundingClientRect(); const sx = e.clientX - r.left, sy = e.clientY - r.top;
-    const panning = e.button === 1 || spaceDown || (e.button === 0 && S.mode === 'pan');
-    if (e.button === 0 && S.mode === 'pan' && !spaceDown) {
-      const g = e.target.closest && e.target.closest('[data-mk]');
-      if (g) { S.selMk = g.getAttribute('data-mk'); S.drag = { kind: 'mk', id: S.selMk, sx, sy, orig: JSON.parse(JSON.stringify(curMks().find(m => m.id === S.selMk))) }; stage.setPointerCapture(e.pointerId); renderMarkupList(); draw(); return; }
-      if (S.selMk) { S.selMk = null; renderMarkupList(); draw(); }
-    }
+    if (e.button !== 0 && e.button !== 1) return;
+    // 1. handles of the selected crop or markup
+    const hEl = e.target.closest && e.target.closest('[data-h]');
+    if (hEl && e.button === 0 && !spaceDown) { startHandle(hEl.getAttribute('data-h'), sx, sy, e); return; }
     if (S.mode === 'twopt' && e.button === 0 && !spaceDown) { twoptClick(sx, sy, e.altKey); return; }
+    const mkEl = e.target.closest && e.target.closest('[data-mk]');
+    const toolMode = ['crop', 'cloud', 'arrow', 'text'].includes(S.mode);
+    // 2. markups: select and drag in pan/move modes
+    if (mkEl && e.button === 0 && !spaceDown && !toolMode) {
+      const id = mkEl.getAttribute('data-mk');
+      const now = Date.now();
+      if (lastTap.id === id && now - lastTap.t < 380) { const m = curMks().find(x => x.id === id); if (m && m.type === 'text') { openTextEditor(m); return; } }
+      lastTap = { t: now, id };
+      S.selMk = id; S.sel = S.sel; renderMarkupList();
+      S.drag = { kind: 'mk', id, sx, sy, orig: clone(curMks().find(m => m.id === id)) }; drawSvg(); return;
+    }
+    if (e.button === 0 && !spaceDown && S.selMk && !toolMode) { S.selMk = null; renderMarkupList(); drawSvg(); }
+    // 3. move the selected overlay
     if (e.button === 0 && !spaceDown && (S.mode === 'move' || (S.mode === 'pan' && e.shiftKey))) {
-      const g = e.target.closest && e.target.closest('[data-mk]');
-      if (g) { S.selMk = g.getAttribute('data-mk'); S.drag = { kind: 'mk', id: S.selMk, sx, sy, orig: JSON.parse(JSON.stringify(curMks().find(m => m.id === S.selMk))) }; stage.setPointerCapture(e.pointerId); renderMarkupList(); draw(); return; }
       let o = selOv();
       if (!o) { const vis = curOvs().filter(v => v.visible && v.ready); if (vis.length === 1) { o = vis[0]; S.sel = o.id; renderOverlays(); } }
       if (!o) { toast('Select an overlay in the sidebar, then drag to move it.'); return; }
-      S.drag = { kind: 'ov', id: o.id, sx, sy, tx: o.tx, ty: o.ty }; stage.classList.add('dragging'); stage.setPointerCapture(e.pointerId); e.preventDefault(); return;
+      S.drag = { kind: 'ov', id: o.id, sx, sy, tx: o.tx, ty: o.ty }; stage.classList.add('dragging'); e.preventDefault(); return;
     }
-    if (panning) { S.drag = { kind: 'pan', sx, sy, vx: S.view.x, vy: S.view.y }; stage.classList.add('dragging'); stage.setPointerCapture(e.pointerId); e.preventDefault(); return; }
-    if (e.button === 0 && ['crop', 'cloud', 'arrow', 'text'].includes(S.mode)) {
+    // 4. drawing tools
+    if (e.button === 0 && !spaceDown && toolMode) {
       if (S.mode === 'crop' && !selOv()) { toast('Select an overlay in the sidebar first, then drag the area to keep.'); return; }
-      S.drag = { kind: 'band', band: [[sx, sy], [sx, sy]] }; stage.setPointerCapture(e.pointerId);
+      S.drag = { kind: 'band', band: [[sx, sy], [sx, sy]] }; return;
     }
+    // 5. pan
+    S.drag = { kind: 'pan', sx, sy, vx: S.view.x, vy: S.view.y }; stage.classList.add('dragging'); e.preventDefault();
   });
   stage.addEventListener('pointermove', (e) => {
     const r = stage.getBoundingClientRect(); const sx = e.clientX - r.left, sy = e.clientY - r.top;
@@ -2095,115 +2287,209 @@ button, input, select { font: inherit; color: inherit; }
       $('#zoomV').textContent = Math.round(S.view.z * 100 / (96 / 72)) + '%';
       draw(); return;
     }
-    if (S.basePn) { const p = toPage(sx, sy); $('#stPos').textContent = `x ${p[0].toFixed(1)}, y ${p[1].toFixed(1)} pt`; }
+    if (S.base != null) { const p = toPage(sx, sy); $('#stPos').textContent = `x ${p[0].toFixed(1)}, y ${p[1].toFixed(1)} pt`; }
     if (S.mode === 'twopt' && S.twopt && !S.drag) { S.twopt.snap = e.altKey ? null : snapAt(sx, sy); drawSvg(); }
     const d = S.drag; if (!d) return;
+    const far = Math.hypot(sx - d.sx, sy - d.sy) > 3;
     if (d.kind === 'pan') { S.view.x = d.vx + sx - d.sx; S.view.y = d.vy + sy - d.sy; draw(); }
-    else if (d.kind === 'ov') { const o = curOvs().find(v => v.id === d.id); if (o) { o.tx = d.tx + (sx - d.sx) / S.view.z; o.ty = d.ty + (sy - d.sy) / S.view.z; d.moved = true; draw(); } }
+    else if (d.kind === 'ov') { const o = curOvs().find(v => v.id === d.id); if (o && (d.moved || far)) { if (!d.moved) { commit(); d.moved = true; } o.tx = d.tx + (sx - d.sx) / S.view.z; o.ty = d.ty + (sy - d.sy) / S.view.z; draw(); } }
     else if (d.kind === 'band') { d.band[1] = [sx, sy]; drawSvg(); }
     else if (d.kind === 'mk') {
+      if (!d.moved && !far) return;
+      if (!d.moved) { commit(); d.moved = true; }
       const dx = (sx - d.sx) / S.view.z, dy = (sy - d.sy) / S.view.z; const m = curMks().find(m => m.id === d.id); if (!m) return;
       if (m.type === 'text') m.box = [d.orig.box[0] + dx, d.orig.box[1] + dy, d.orig.box[2] + dx, d.orig.box[3] + dy];
       else m.points = d.orig.points.map(p => [p[0] + dx, p[1] + dy]);
-      d.moved = true; drawSvg();
-    }
+      drawSvg();
+    } else if (d.kind === 'h') { moveHandle(d, sx, sy, e); }
   });
-  const endTouch = (e) => {
-    ptrs.delete(e.pointerId);
-    if (S.pinch && ptrs.size < 2) { S.pinch = null; S.drag = null; afterView(); return true; }
-    return false;
-  };
+  const endTouch = (e) => { ptrs.delete(e.pointerId); if (S.pinch && ptrs.size < 2) { S.pinch = null; S.drag = null; afterView(); return true; } return false; };
   stage.addEventListener('pointercancel', (e) => { endTouch(e); S.drag = null; stage.classList.remove('dragging'); drawSvg(); });
   stage.addEventListener('pointerup', (e) => {
     if (endTouch(e)) return;
     const d = S.drag; S.drag = null; stage.classList.remove('dragging');
     if (!d) return;
     if (d.kind === 'pan') { afterView(); return; }
-    if (d.kind === 'ov') { const o = curOvs().find(v => v.id === d.id); if (o && d.moved) { changed(o); status(`Moved ${label(o.pn)} by hand.`); } return; }
+    if (d.kind === 'ov') { const o = curOvs().find(v => v.id === d.id); if (o && d.moved) { markManual(o); status(`Moved ${label(o.pn)} by hand.`); } return; }
     if (d.kind === 'mk') { drawSvg(); return; }
+    if (d.kind === 'h') { endHandle(d); return; }
     if (d.kind === 'band') {
-      const [a, b] = d.band; const big = Math.hypot(b[0] - a[0], b[1] - a[1]) > 6;
+      const [a, b] = d.band; const big = Math.hypot(b[0] - a[0], b[1] - a[1]) > 8;
       const pa = toPage(a[0], a[1]), pb = toPage(b[0], b[1]);
-      if (!big) { drawSvg(); return; }
-      if (S.mode === 'crop') applyCrop(pa, pb);
-      else if (S.mode === 'cloud') addMarkup({ type: 'cloud', points: [[Math.min(pa[0], pb[0]), Math.min(pa[1], pb[1])], [Math.max(pa[0], pb[0]), Math.min(pa[1], pb[1])], [Math.max(pa[0], pb[0]), Math.max(pa[1], pb[1])], [Math.min(pa[0], pb[0]), Math.max(pa[1], pb[1])]] });
-      else if (S.mode === 'arrow') addMarkup({ type: 'arrow', points: [pa, pb] });
-      else if (S.mode === 'text') startTextEdit([Math.min(pa[0], pb[0]), Math.min(pa[1], pb[1]), Math.max(pa[0], pb[0]), Math.max(pa[1], pb[1])]);
+      const box = [Math.min(pa[0], pb[0]), Math.min(pa[1], pb[1]), Math.max(pa[0], pb[0]), Math.max(pa[1], pb[1])];
+      if (S.mode === 'text') {
+        // a tap places a default-size box; a drag sets its size
+        const bx = big ? box : [pa[0], pa[1], pa[0] + 180, pa[1] + 40];
+        openTextEditor(null, bx);
+      } else if (big) {
+        if (S.mode === 'crop') applyCrop(pa, pb);
+        else if (S.mode === 'cloud') addMarkup({ type: 'cloud', points: [[box[0], box[1]], [box[2], box[1]], [box[2], box[3]], [box[0], box[3]]] });
+        else if (S.mode === 'arrow') addMarkup({ type: 'arrow', points: [pa, pb] });
+      }
       drawSvg();
     }
   });
   stage.addEventListener('dblclick', (e) => {
     const g = e.target.closest && e.target.closest('[data-mk]'); if (!g) return;
-    const m = curMks().find(m => m.id === g.getAttribute('data-mk')); if (m && m.type === 'text') startTextEdit(m.box, m);
+    const m = curMks().find(m => m.id === g.getAttribute('data-mk')); if (m && m.type === 'text') openTextEditor(m);
   });
 
-  // ---------------- markups ----------------
-  let mkSeq = 1;
-  function addMarkup(m) { m.id = 'm' + (mkSeq++); m.width = m.type === 'text' ? 1 : 2; curMks().push(m); S.selMk = m.id; renderMarkupList(); setMode('pan'); draw(); }
-  function startTextEdit(box, existing) {
-    const p0 = toScreen([box[0], box[1]]), p1 = toScreen([box[2], box[3]]);
-    const ta = el('textarea', { class: 'textedit', 'aria-label': 'Text box content' });
-    ta.style.left = p0[0] + 'px'; ta.style.top = p0[1] + 'px'; ta.style.width = Math.max(120, p1[0] - p0[0]) + 'px'; ta.style.height = Math.max(40, p1[1] - p0[1]) + 'px';
-    ta.value = existing ? existing.text : '';
-    stage.append(ta); setTimeout(() => ta.focus(), 0);
-    let done = false;
-    const commit = () => {
-      if (done) return; done = true; const txt = ta.value.trim(); ta.remove();
-      if (existing) { if (txt) existing.text = txt; else removeMarkup(existing.id); renderMarkupList(); draw(); return; }
-      if (txt) addMarkup({ type: 'text', box, text: txt }); else setMode('pan');
-    };
-    ta.addEventListener('blur', commit);
-    ta.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Escape') { ta.value = existing ? existing.text : ''; ta.blur(); } if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) ta.blur(); });
+  // ---------------- handles (crop + markup editing) ----------------
+  function startHandle(h, sx, sy, e) {
+    const parts = h.split(':');
+    const d = { kind: 'h', h, parts, sx, sy, moved: false };
+    if (parts[0] === 'crop') { const o = selOv(); if (!o || !o.crop) return; d.oid = o.id; d.orig = normCrop(clone(o.crop)); d.Ai = inv(alignM(o)); d.q0 = ap(d.Ai, ...toPage(sx, sy)); }
+    else { const m = selMk(); if (!m) return; d.mid = m.id; d.orig = clone(m); }
+    S.drag = d; e.preventDefault();
   }
-  function removeMarkup(id) { const L = curMks(); const i = L.findIndex(m => m.id === id); if (i >= 0) L.splice(i, 1); if (S.selMk === id) S.selMk = null; renderMarkupList(); draw(); }
+  function moveHandle(d, sx, sy, e) {
+    if (!d.moved) {
+      if (Math.hypot(sx - d.sx, sy - d.sy) < 2) return;
+      commit(); d.moved = true;
+      if (d.parts[0] === 'mk' && d.parts[1] === 'e') { // dragging an edge midpoint inserts a vertex
+        const m = selMk(); const i = +d.parts[2]; const a = m.points[i], b = m.points[(i + 1) % m.points.length];
+        m.points.splice(i + 1, 0, [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]); d.parts = ['mk', 'v', String(i + 1)];
+      }
+    }
+    const p = toPage(sx, sy);
+    if (d.parts[0] === 'crop') {
+      const o = curOvs().find(v => v.id === d.oid); if (!o) return;
+      const q = ap(d.Ai, p[0], p[1]); const c0 = d.orig;
+      if (d.parts[1] === 'm') o.crop = Object.assign({}, c0, { cx: c0.cx + q[0] - d.q0[0], cy: c0.cy + q[1] - d.q0[1] });
+      else if (d.parts[1] === 'r') {
+        let a = c0.a + Math.atan2(q[1] - c0.cy, q[0] - c0.cx) - Math.atan2(d.q0[1] - c0.cy, d.q0[0] - c0.cx);
+        if (e.shiftKey) a = Math.round(a / (Math.PI / 12)) * (Math.PI / 12);
+        o.crop = Object.assign({}, c0, { a });
+      } else {
+        const i = +d.parts[2]; const hw = c0.w / 2, hh = c0.h / 2;
+        const loc = [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]];
+        const F = loc[(i + 2) % 4], L = toLocal(c0, q);
+        const mid = [(F[0] + L[0]) / 2, (F[1] + L[1]) / 2]; const nc = fromLocal(c0, mid);
+        o.crop = { cx: nc[0], cy: nc[1], w: Math.max(4, Math.abs(L[0] - F[0])), h: Math.max(4, Math.abs(L[1] - F[1])), a: c0.a };
+      }
+      draw(); return;
+    }
+    const m = curMks().find(x => x.id === d.mid); if (!m) return;
+    if (d.parts[1] === 'v') m.points[+d.parts[2]] = p;
+    else if (d.parts[1] === 'c') {
+      const i = +d.parts[2]; const b = m.box.slice();
+      if (i === 0) { b[0] = p[0]; b[1] = p[1]; } else if (i === 1) { b[2] = p[0]; b[1] = p[1]; } else if (i === 2) { b[2] = p[0]; b[3] = p[1]; } else { b[0] = p[0]; b[3] = p[1]; }
+      m.box = b;
+    }
+    drawSvg();
+  }
+  function endHandle(d) {
+    if (!d.moved) {
+      if (d.parts[0] === 'mk' && d.parts[1] === 'v') { // tap on a cloud vertex with more than 3 points removes it on double tap
+        const now = Date.now(); const m = selMk();
+        if (m && m.type === 'cloud' && m.points.length > 3 && lastTap.id === d.h && now - lastTap.t < 380) { commit(); m.points.splice(+d.parts[2], 1); drawSvg(); }
+        lastTap = { t: now, id: d.h };
+      }
+      return;
+    }
+    if (d.parts[0] === 'crop') { const o = curOvs().find(v => v.id === d.oid); if (o) { syncFields(o); scheduleHiRes(); renderOverlays(); } }
+    else { const m = curMks().find(x => x.id === d.mid); if (m && m.type === 'text') { const b = m.box; m.box = [Math.min(b[0], b[2]), Math.min(b[1], b[3]), Math.max(b[0], b[2]), Math.max(b[1], b[3])]; } drawSvg(); }
+  }
+
+  // ---------------- markups ----------------
+  function addMarkup(m) { commit(); m.id = uid('m'); if (!m.width) m.width = m.type === 'text' ? 1 : 2; curMks().push(m); S.selMk = m.id; renderMarkupList(); renderList(); setMode('pan'); draw(); }
+  let textCtx = null;
+  function openTextEditor(existing, box) {
+    const ed = $('#textEd'), ta = $('#teText');
+    textCtx = { existing: existing ? existing.id : null, box: box || (existing && existing.box.slice()) };
+    ta.value = existing ? existing.text : '';
+    $('#teSize').value = String(existing && existing.size || 9);
+    ed.hidden = false; $('#mkBar').hidden = true;
+    if (!narrow()) {
+      const r = stage.getBoundingClientRect(); const p = toScreen([textCtx.box[0], textCtx.box[3]]);
+      ed.style.left = clamp(p[0], 8, r.width - ed.offsetWidth - 8) + 'px'; ed.style.top = clamp(p[1] + 8, 8, r.height - ed.offsetHeight - 8) + 'px';
+    } else { ed.style.left = ''; ed.style.top = ''; }
+    try { ta.focus({ preventScroll: true }); } catch (e) { ta.focus(); }
+    status(existing ? 'Edit the text, then Done.' : 'Type the note, then Done (Ctrl+Enter).');
+  }
+  function closeTextEditor(save) {
+    const ed = $('#textEd'); if (ed.hidden) return; ed.hidden = true;
+    const c = textCtx; textCtx = null; if (!c || !save) { if (S.mode === 'text') setMode('pan'); drawSvg(); return; }
+    const txt = $('#teText').value.replace(/\s+$/, ''); const size = +$('#teSize').value || 9;
+    if (c.existing) {
+      const m = curMks().find(x => x.id === c.existing); if (!m) return;
+      if (!txt) { removeMarkup(m.id); return; }
+      if (m.text !== txt || (m.size || 9) !== size) { commit(); m.text = txt; m.size = size; }
+      renderMarkupList(); drawSvg();
+    } else if (txt) {
+      const b = c.box; const lines = txt.split('\n').length;
+      const minH = (lines * 1.2 * size) + 4; if (b[3] - b[1] < minH) b[3] = b[1] + minH;
+      addMarkup({ type: 'text', box: b, text: txt, size }); status('Text added. Drag it to move, drag its corners to resize, or tap Edit text.');
+    } else setMode('pan');
+  }
+  $('#teDone').addEventListener('click', () => closeTextEditor(true));
+  $('#teCancel').addEventListener('click', () => closeTextEditor(false));
+  $('#teText').addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Escape') closeTextEditor(false); if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) closeTextEditor(true); });
+  $('#textEd').addEventListener('pointerdown', (e) => e.stopPropagation());
+  // after a tap, browsers send a compatibility mousedown that would move focus back to the drawing
+  stage.addEventListener('mousedown', (e) => { if (!$('#textEd').hidden && !e.target.closest('.texted')) e.preventDefault(); });
+  $('#mkBar').addEventListener('pointerdown', (e) => e.stopPropagation());
+  function removeMarkup(id) { const L = curMks(); const i = L.findIndex(m => m.id === id); if (i < 0) return; commit(); L.splice(i, 1); if (S.selMk === id) S.selMk = null; renderMarkupList(); renderList(); draw(); }
   function renderMarkupList() {
     const box = $('#mkList'); box.textContent = '';
-    const L = curMks(); if (!L.length) return;
+    const L = S.base != null ? curMks() : []; if (!L.length) return;
     box.append(el('div', { class: 'sec-h' }, el('span', { text: 'Markups' }), el('span', { class: 'spacer' }), el('span', { class: 'ct', text: String(L.length) })));
     for (const m of L) {
-      const nm = m.type === 'cloud' ? 'Cloud' : m.type === 'arrow' ? 'Arrow' : 'Text: ' + m.text;
+      const nm = m.type === 'cloud' ? `Cloud (${m.points.length} points)` : m.type === 'arrow' ? 'Arrow' : 'Text: ' + m.text;
       const del = el('button', { class: 'ib', title: 'Delete markup', 'aria-label': 'Delete markup', onclick: () => removeMarkup(m.id) }); del.innerHTML = ICON.x;
-      box.append(el('div', { class: 'mk', style: m.id === S.selMk ? 'background:var(--hover)' : '' }, el('span', { text: nm, onclick: () => { S.selMk = m.id; renderMarkupList(); draw(); } }), del));
+      const row = el('div', { class: 'mk', style: m.id === S.selMk ? 'background:var(--hover)' : '' }, el('span', { text: nm, onclick: () => { S.selMk = m.id; renderMarkupList(); drawSvg(); } }));
+      if (m.type === 'text') row.append(el('button', { class: 'btn tiny', type: 'button', text: 'Edit', onclick: () => { S.selMk = m.id; openTextEditor(m); } }));
+      row.append(del); box.append(row);
     }
   }
 
   // ---------------- crop ----------------
   function applyCrop(pa, pb) {
     const o = selOv(); if (!o) return;
-    const Ai = inv(alignM(o)); const inf = S.info[o.pn];
-    const pts = [[pa[0], pa[1]], [pb[0], pa[1]], [pb[0], pb[1]], [pa[0], pb[1]]].map(p => ap(Ai, p[0], p[1]));
-    const c = [Math.max(0, Math.min(...pts.map(p => p[0]))), Math.max(0, Math.min(...pts.map(p => p[1]))), Math.min(inf.W, Math.max(...pts.map(p => p[0]))), Math.min(inf.H, Math.max(...pts.map(p => p[1])))];
-    if (c[2] - c[0] < 2 || c[3] - c[1] < 2) { toast('The crop area misses the overlay sheet.'); return; }
-    o.crop = c; setMode('pan'); renderOverlays(); draw(); status(`Cropped ${label(o.pn)} to the selected area.`);
+    const Ai = inv(alignM(o));
+    // a box dragged on screen: keep it screen-aligned, so the crop is rotated by the overlay's own rotation
+    const c0 = ap(Ai, (pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2);
+    const w = Math.abs(pb[0] - pa[0]) / o.s, h = Math.abs(pb[1] - pa[1]) / o.s;
+    if (w < 2 || h < 2) return;
+    commit();
+    o.crop = { cx: c0[0], cy: c0[1], w, h, a: -(o.rot || 0) };
+    renderOverlays(); draw(); status(`Cropped ${label(o.pn)}. Drag the corners to resize, the round handle to rotate, or inside to move the crop.`);
   }
 
   // ---------------- overlays ----------------
-  let ovSeq = 1;
-  async function addOverlay(pn) {
-    if (pn === S.basePn) return;
-    if (curOvs().some(o => o.pn === pn)) return;
-    const o = { id: 'o' + (ovSeq++), pn, color: PALETTE[S.colorIdx++ % PALETTE.length], opacity: 0.75, visible: true, s: 1, rot: 0, tx: 0, ty: 0, crop: null, ready: false, status: 'pending', conf: null, basePn: S.basePn };
-    curOvs().push(o); S.sel = o.id;
+  async function addOverlay(pn, from) {
+    if (S.base == null) return;
+    commit();
+    const o = from ? Object.assign(clone(from), { id: uid('o'), color: PALETTE[S.colorIdx++ % PALETTE.length], tx: from.tx + 36, ty: from.ty + 36, status: from.status === 'auto' ? 'manual' : from.status })
+      : { id: uid('o'), pn, color: PALETTE[S.colorIdx++ % PALETTE.length], opacity: 0.75, visible: true, s: 1, rot: 0, tx: 0, ty: 0, crop: null, ready: false, status: 'pending', conf: null, baseKey: S.base };
+    o.baseKey = S.base;
+    curOvs().push(o); S.sel = o.id; S.openAdj.add(o.id);
     renderOverlays(); renderList();
-    await pageInfo(pn); getPreview(pn, 'ov');
-    runAuto(o);
+    await pageInfo(o.pn); getPreview(o.pn, 'ov');
+    if (!from) runAuto(o); else { draw(); scheduleHiRes(); status(`Added another copy of ${label(o.pn)}. Crop it, then move it where you need it.`); }
   }
   function runAuto(o) {
     o.status = 'pending'; renderOverlays();
+    const baseKey = o.baseKey; const bpn = srcOf(baseKey);
     S.alignQueue = S.alignQueue.then(async () => {
-      busy(true, `Aligning ${label(o.pn)} on ${label(o.basePn)}`);
+      busy(true, `Aligning ${label(o.pn)} on ${label(baseKey)}`);
       try {
-        const r = await E.autoAlign(PDFJS, S.doc, o.basePn, o.pn, S.cache);
-        if (r.ok) {
-          Object.assign(o, { s: r.best.s, rot: 0, tx: r.best.tx, ty: r.best.ty, status: 'auto', conf: r.confidence });
-          o.auto = { s: r.best.s, tx: r.best.tx, ty: r.best.ty, conf: r.confidence };
-          status(`${label(o.pn)} aligned on ${r.best.nx + r.best.ny} grid lines, ${r.confidence.level} confidence.`);
+        if (!bpn) {
+          const bi = sheetInfoSync(baseKey), oi = S.info[o.pn];
+          if (!o.ready) Object.assign(o, { s: 1, rot: 0, tx: (bi.W - oi.W) / 2, ty: (bi.H - oi.H) / 2 });
+          Object.assign(o, { status: 'manual', conf: { level: 'manual', value: 0, notes: ['Blank sheet: there is no grid to align to. Crop and move the overlay where you want it.'] } });
         } else {
-          const bi = S.info[o.basePn], oi = S.info[o.pn];
-          const s = Math.min(bi.W / oi.W, bi.H / oi.H);
-          if (!o.ready) Object.assign(o, { s, rot: 0, tx: 0, ty: 0 });
-          Object.assign(o, { status: 'failed', conf: r.confidence });
-          status(`${label(o.pn)}: ${r.reason}. Use two-point align.`);
+          const r = await E.autoAlign(PDFJS, S.doc, bpn, o.pn, S.cache);
+          if (r.ok) {
+            Object.assign(o, { s: r.best.s, rot: 0, tx: r.best.tx, ty: r.best.ty, status: 'auto', conf: r.confidence });
+            o.auto = { s: r.best.s, tx: r.best.tx, ty: r.best.ty, conf: r.confidence };
+            status(`${label(o.pn)} aligned on ${r.best.nx + r.best.ny} grid lines, ${r.confidence.level} confidence.`);
+          } else {
+            const bi = await sheetInfo(baseKey), oi = S.info[o.pn];
+            if (!o.ready) Object.assign(o, { s: Math.min(bi.W / oi.W, bi.H / oi.H), rot: 0, tx: 0, ty: 0 });
+            Object.assign(o, { status: 'failed', conf: r.confidence });
+            status(`${label(o.pn)}: ${r.reason}. Use two-point align.`);
+          }
         }
       } catch (e) {
         console.error(e);
@@ -2216,21 +2502,17 @@ button, input, select { font: inherit; color: inherit; }
   }
   function removeOverlay(id) {
     const L = curOvs(); const i = L.findIndex(o => o.id === id); if (i < 0) return;
-    L.splice(i, 1); S.tiles.delete('ov:' + id); if (S.sel === id) S.sel = null;
+    commit(); L.splice(i, 1); S.tiles.delete('ov:' + id); if (S.sel === id) S.sel = null;
     renderOverlays(); renderList(); draw();
   }
-  function changed(o) {
-    if (o.status !== 'pending') o.status = 'manual';
-    syncFields(o); draw(); scheduleHiRes();
-  }
-  // keep a pivot fixed while scaling or rotating: pivot = centre of the crop (or sheet), in overlay coords
-  function pivotOf(o) { const inf = S.info[o.pn]; const c = o.crop || [0, 0, inf.W, inf.H]; return [(c[0] + c[2]) / 2, (c[1] + c[3]) / 2]; }
+  function markManual(o) { if (o.status !== 'pending') o.status = 'manual'; syncFields(o); draw(); scheduleHiRes(); }
+  function pivotOf(o) { const c = normCrop(o.crop); if (c) return [c.cx, c.cy]; const inf = S.info[o.pn]; return [inf.W / 2, inf.H / 2]; }
   function setScaleRot(o, s, rot) {
     const pv = pivotOf(o); const P = ap(alignM(o), pv[0], pv[1]);
     o.s = s; o.rot = rot; const Q = ap(alignM(o), pv[0], pv[1]);
     o.tx += P[0] - Q[0]; o.ty += P[1] - Q[1];
   }
-  function nudge(o, dx, dy) { o.tx += dx; o.ty += dy; changed(o); }
+  function nudge(o, dx, dy) { commit('nudge' + o.id); o.tx += dx; o.ty += dy; markManual(o); }
 
   function confChip(o) {
     let cls = 'pending', txt = 'Aligning', title = 'Auto-alignment running';
@@ -2239,9 +2521,10 @@ button, input, select { font: inherit; color: inherit; }
     else if (o.status === '2pt') { cls = 'manual'; txt = 'Two-point'; title = 'Aligned from two picked points'; }
     else if (o.status === 'failed') { cls = 'none'; txt = 'Not aligned'; title = (o.conf && o.conf.notes.join('; ')) || 'Auto-alignment failed'; }
     const b = el('button', { class: 'chip ' + cls, title, 'aria-label': 'Alignment: ' + txt + '. Show details' }, el('i'), txt);
-    b.addEventListener('click', (e) => { e.stopPropagation(); if (S.openAdj.has(o.id)) S.openAdj.delete(o.id); else S.openAdj.add(o.id); S.sel = o.id; renderOverlays(); draw(); });
+    b.addEventListener('click', (e) => { e.stopPropagation(); toggleAdj(o); });
     return b;
   }
+  function toggleAdj(o) { if (S.openAdj.has(o.id)) S.openAdj.delete(o.id); else S.openAdj.add(o.id); S.sel = o.id; renderOverlays(); draw(); }
   function numField(lbl, id, val, step, onset) {
     const inp = el('input', { id, type: 'number', step: String(step), value: val, 'aria-label': lbl });
     inp.addEventListener('change', () => { const v = parseFloat(inp.value); if (Number.isFinite(v)) onset(v); });
@@ -2256,36 +2539,38 @@ button, input, select { font: inherit; color: inherit; }
   function syncFields(o) {
     const set = (id, v) => { const n = document.getElementById(id); if (n && document.activeElement !== n) n.value = v; };
     set('tx-' + o.id, o.tx.toFixed(2)); set('ty-' + o.id, o.ty.toFixed(2)); set('s-' + o.id, (o.s * 100).toFixed(3)); set('r-' + o.id, (o.rot * 180 / Math.PI).toFixed(3));
+    const c = normCrop(o.crop); if (c) set('cr-' + o.id, (c.a * 180 / Math.PI).toFixed(1));
     const card = document.querySelector(`.card[data-id="${o.id}"]`);
     if (card) { const old = card.querySelector('.chip'); if (old) old.replaceWith(confChip(o)); }
     if (o.id === S.sel) $('#stScale').textContent = `scale ×${o.s.toFixed(4)}${fmtScale(o.s)}`;
   }
   function renderOverlays() {
     const box = $('#ovs'); box.textContent = '';
-    const L = S.basePn ? curOvs() : [];
-    $('#ovTitle').textContent = S.basePn ? `Overlays on ${label(S.basePn)}` : 'Overlays';
+    const L = S.base != null ? curOvs() : [];
+    $('#ovTitle').textContent = S.base != null ? `Overlays on ${label(S.base)}` : 'Overlays';
     $('#ovCount').textContent = L.length ? String(L.length) : '';
+    const counts = {}; for (const o of L) counts[o.pn] = (counts[o.pn] || 0) + 1; const seen = {};
     for (const o of L) {
+      seen[o.pn] = (seen[o.pn] || 0) + 1;
       const card = el('div', { class: 'card' + (o.id === S.sel ? ' sel' : ''), 'data-id': o.id });
       card.style.setProperty('--ovc', o.color);
       const colorIn = el('input', { type: 'color', value: o.color, 'aria-label': 'Overlay color', id: 'c-' + o.id });
-      colorIn.addEventListener('input', () => { o.color = colorIn.value; sw.style.background = o.color; card.style.setProperty('--ovc', o.color); draw(); });
+      colorIn.addEventListener('input', () => { commit('color' + o.id); o.color = colorIn.value; sw.style.background = o.color; card.style.setProperty('--ovc', o.color); draw(); });
       const sw = el('label', { class: 'sw', title: 'Change color' }, colorIn); sw.style.background = o.color;
-      const eye = el('button', { class: 'ib', title: o.visible ? 'Hide overlay' : 'Show overlay', 'aria-label': o.visible ? 'Hide overlay' : 'Show overlay', 'aria-pressed': String(!o.visible) }); eye.innerHTML = o.visible ? ICON.eye : ICON.eyeOff;
-      eye.addEventListener('click', (e) => { e.stopPropagation(); o.visible = !o.visible; renderOverlays(); ensurePreviews(); draw(); scheduleHiRes(); });
-      const adjBtn = el('button', { class: 'ib', title: 'Adjust position, scale, rotation', 'aria-label': 'Adjust', 'aria-pressed': String(S.openAdj.has(o.id)) }); adjBtn.innerHTML = ICON.sliders;
-      adjBtn.addEventListener('click', (e) => { e.stopPropagation(); if (S.openAdj.has(o.id)) S.openAdj.delete(o.id); else S.openAdj.add(o.id); S.sel = o.id; renderOverlays(); draw(); });
-      const rm = el('button', { class: 'ib', title: 'Remove overlay', 'aria-label': 'Remove overlay' }); rm.innerHTML = ICON.x;
-      rm.addEventListener('click', (e) => { e.stopPropagation(); removeOverlay(o.id); });
-      const b = sheet(o.pn);
-      const t = el('div', { class: 't' }, el('b', { text: label(o.pn) }), el('span', { text: (b && b.name) || '' }));
-      card.append(el('div', { class: 'row1' }, sw, t, confChip(o), adjBtn, eye, rm));
+      const mkIb = (html, title, fn, pressed) => { const b = el('button', { class: 'ib', title, 'aria-label': title }); if (pressed != null) b.setAttribute('aria-pressed', String(pressed)); b.innerHTML = html; b.addEventListener('click', (e) => { e.stopPropagation(); fn(); }); return b; };
+      const eye = mkIb(o.visible ? ICON.eye : ICON.eyeOff, o.visible ? 'Hide overlay' : 'Show overlay', () => { commit(); o.visible = !o.visible; renderOverlays(); ensurePreviews(); draw(); scheduleHiRes(); }, !o.visible);
+      const adjBtn = mkIb(ICON.sliders, 'Adjust position, scale, rotation and crop', () => toggleAdj(o), S.openAdj.has(o.id));
+      const dup = mkIb(ICON.copy, 'Add another copy of this sheet (to crop a different part)', () => addOverlay(o.pn, o));
+      const rm = mkIb(ICON.x, 'Remove overlay', () => removeOverlay(o.id));
+      const b = sheetBy(o.pn);
+      const t = el('div', { class: 't' }, el('b', { text: label(o.pn) }), el('span', { text: (counts[o.pn] > 1 ? `Copy ${seen[o.pn]} · ` : '') + ((b && b.name) || '') }));
+      card.append(el('div', { class: 'row1' }, sw, t, confChip(o), adjBtn, dup, eye, rm));
       const rng = el('input', { type: 'range', min: '0.1', max: '1', step: '0.05', value: String(o.opacity), id: 'op-' + o.id, 'aria-label': 'Overlay opacity' });
       const out = el('output', { text: Math.round(o.opacity * 100) + '%' });
-      rng.addEventListener('input', () => { o.opacity = parseFloat(rng.value); out.textContent = Math.round(o.opacity * 100) + '%'; draw(); });
+      rng.addEventListener('input', () => { commit('op' + o.id); o.opacity = parseFloat(rng.value); out.textContent = Math.round(o.opacity * 100) + '%'; draw(); });
       card.append(el('div', { class: 'op' }, el('span', { text: 'Opacity' }), rng, out));
       if (S.openAdj.has(o.id)) card.append(adjustPanel(o));
-      card.addEventListener('click', () => { if (S.sel !== o.id) { S.sel = o.id; renderOverlays(); draw(); syncFields(o); } });
+      card.addEventListener('click', () => { if (S.sel !== o.id) { S.sel = o.id; S.selMk = null; renderOverlays(); renderMarkupList(); draw(); syncFields(o); } });
       box.append(card);
     }
     const o = selOv(); $('#stScale').textContent = o ? `scale ×${o.s.toFixed(4)}${fmtScale(o.s)}` : '';
@@ -2294,25 +2579,36 @@ button, input, select { font: inherit; color: inherit; }
     const wrap = el('div', { class: 'adj' });
     if (o.conf && o.conf.notes && o.conf.notes.length) wrap.append(el('ul', { class: 'notes' }, ...o.conf.notes.map(n => el('li', { text: n }))));
     wrap.append(el('div', { class: 'fields' },
-      numField('X pt', 'tx-' + o.id, o.tx.toFixed(2), 0.5, v => { o.tx = v; changed(o); }),
-      numField('Y pt', 'ty-' + o.id, o.ty.toFixed(2), 0.5, v => { o.ty = v; changed(o); }),
-      numField('Scale %', 's-' + o.id, (o.s * 100).toFixed(3), 0.01, v => { if (v > 0) { setScaleRot(o, v / 100, o.rot); changed(o); } }),
-      numField('Rot °', 'r-' + o.id, (o.rot * 180 / Math.PI).toFixed(3), 0.05, v => { setScaleRot(o, o.s, v * Math.PI / 180); changed(o); })));
+      numField('X pt', 'tx-' + o.id, o.tx.toFixed(2), 0.5, v => { commit(); o.tx = v; markManual(o); }),
+      numField('Y pt', 'ty-' + o.id, o.ty.toFixed(2), 0.5, v => { commit(); o.ty = v; markManual(o); }),
+      numField('Scale %', 's-' + o.id, (o.s * 100).toFixed(3), 0.01, v => { if (v > 0) { commit(); setScaleRot(o, v / 100, o.rot); markManual(o); } }),
+      numField('Rot °', 'r-' + o.id, (o.rot * 180 / Math.PI).toFixed(3), 0.05, v => { commit(); setScaleRot(o, o.s, v * Math.PI / 180); markManual(o); })));
     const btn = (html, title, fn) => { const b = el('button', { title, 'aria-label': title }); b.innerHTML = html; b.addEventListener('click', (e) => { e.stopPropagation(); fn(); }); return b; };
     const pad = el('div', { class: 'pad' },
       el('span'), btn(ICON.up, 'Nudge up', () => nudge(o, 0, -S.step)), el('span'),
       btn(ICON.left, 'Nudge left', () => nudge(o, -S.step, 0)), btn(ICON.down, 'Nudge down', () => nudge(o, 0, S.step)), btn(ICON.right, 'Nudge right', () => nudge(o, S.step, 0)));
     const seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Nudge step' });
     for (const st of [0.1, 1, 10]) { const b = el('button', { 'aria-pressed': String(S.step === st), text: st + ' pt' }); b.addEventListener('click', (e) => { e.stopPropagation(); S.step = st; renderOverlays(); }); seg.append(b); }
-    const sc = (f, t) => el('button', { class: 'btn', text: t, onclick: (e) => { e.stopPropagation(); setScaleRot(o, o.s * f, o.rot); changed(o); } });
-    const rt = (d, t) => el('button', { class: 'btn', text: t, onclick: (e) => { e.stopPropagation(); setScaleRot(o, o.s, o.rot + d * Math.PI / 180); changed(o); } });
+    const sc = (f, t) => el('button', { class: 'btn', text: t, onclick: (e) => { e.stopPropagation(); commit('sc' + o.id); setScaleRot(o, o.s * f, o.rot); markManual(o); } });
+    const rt = (d, t) => el('button', { class: 'btn', text: t, onclick: (e) => { e.stopPropagation(); commit('rt' + o.id); setScaleRot(o, o.s, o.rot + d * Math.PI / 180); markManual(o); } });
     wrap.append(el('div', { class: 'nudge' }, pad, el('div', { style: 'display:grid;gap:4px' }, seg, el('div', { class: 'mini' }, sc(1 / 1.001, '−0.1%'), sc(1.001, '+0.1%'), rt(-0.05, '↺ 0.05°'), rt(0.05, '↻ 0.05°')))));
+    // crop controls
+    const c = normCrop(o.crop);
+    const cropRow = el('div', { class: 'mini' });
+    cropRow.append(el('button', { class: 'btn', text: o.crop ? 'Edit crop' : 'Crop region', title: o.crop ? 'Show crop handles: drag corners to resize, the round handle to rotate, inside to move' : 'Drag a box around the part of this overlay to keep', onclick: (e) => { e.stopPropagation(); S.sel = o.id; setMode('crop'); if (narrow()) setDrawer(false); } }));
+    if (c) {
+      const rf = el('input', { id: 'cr-' + o.id, type: 'number', step: '1', value: (c.a * 180 / Math.PI).toFixed(1), 'aria-label': 'Crop rotation in degrees', style: 'width:64px' });
+      rf.addEventListener('change', () => { const v = parseFloat(rf.value); if (Number.isFinite(v)) { commit(); o.crop = Object.assign(normCrop(o.crop), { a: v * Math.PI / 180 }); draw(); } });
+      rf.addEventListener('keydown', (e) => e.stopPropagation());
+      const rot = (d) => el('button', { class: 'btn', text: (d > 0 ? '↻ ' : '↺ ') + Math.abs(d) + '°', onclick: (e) => { e.stopPropagation(); commit('cr' + o.id); const cc = normCrop(o.crop); o.crop = Object.assign({}, cc, { a: cc.a + d * Math.PI / 180 }); syncFields(o); draw(); } });
+      cropRow.append(el('label', { class: 'tgl', for: 'cr-' + o.id }, 'Crop °', rf), rot(-15), rot(15));
+      cropRow.append(el('button', { class: 'btn', text: 'Clear crop', onclick: (e) => { e.stopPropagation(); commit(); o.crop = null; renderOverlays(); draw(); } }));
+    }
+    wrap.append(cropRow);
     const mini = el('div', { class: 'mini' });
-    mini.append(el('button', { class: 'btn', text: o.crop ? 'Redraw crop' : 'Crop region', title: 'Drag a box around the part of this overlay to keep', onclick: (e) => { e.stopPropagation(); S.sel = o.id; setMode('crop'); if (narrow()) setDrawer(false); } }));
-    if (o.crop) mini.append(el('button', { class: 'btn', text: 'Clear crop', onclick: (e) => { e.stopPropagation(); o.crop = null; renderOverlays(); draw(); } }));
     mini.append(el('button', { class: 'btn', text: 'Two-point align', title: 'Click two matching points on each sheet', onclick: (e) => { e.stopPropagation(); if (narrow()) setDrawer(false); startTwoPt(o); } }));
-    mini.append(el('button', { class: 'btn', text: 'Re-run auto', onclick: (e) => { e.stopPropagation(); runAuto(o); } }));
-    if (o.auto) mini.append(el('button', { class: 'btn', text: 'Reset to auto', onclick: (e) => { e.stopPropagation(); Object.assign(o, { s: o.auto.s, tx: o.auto.tx, ty: o.auto.ty, rot: 0, status: 'auto', conf: o.auto.conf }); renderOverlays(); draw(); scheduleHiRes(); } }));
+    if (srcOf(S.base)) mini.append(el('button', { class: 'btn', text: 'Re-run auto', onclick: (e) => { e.stopPropagation(); commit(); runAuto(o); } }));
+    if (o.auto) mini.append(el('button', { class: 'btn', text: 'Reset to auto', onclick: (e) => { e.stopPropagation(); commit(); Object.assign(o, { s: o.auto.s, tx: o.auto.tx, ty: o.auto.ty, rot: 0, status: 'auto', conf: o.auto.conf }); renderOverlays(); draw(); scheduleHiRes(); } }));
     const gchk = el('input', { type: 'checkbox', id: 'g-' + o.id }); gchk.checked = !!o.showGrid;
     gchk.addEventListener('change', () => { o.showGrid = gchk.checked; draw(); });
     mini.append(el('label', { class: 'btn', for: 'g-' + o.id, title: 'Draw the detected grid lines of both sheets' }, gchk, 'Show grids'));
@@ -2325,7 +2621,7 @@ button, input, select { font: inherit; color: inherit; }
   function startTwoPt(o) {
     endModes();
     S.twopt = { o, phase: 'ov', ovPts: [], basePts: [], lock: true, snap: null };
-    S.views[S.basePn] = Object.assign({}, S.view);
+    S.views[S.base] = Object.assign({}, S.view);
     S.solo = o.pn; setMode('twopt', true);
     fit(S.info[o.pn]); ensurePreviews(); renderBanner(); draw();
   }
@@ -2333,23 +2629,22 @@ button, input, select { font: inherit; color: inherit; }
     const b = $('#banner'); b.textContent = '';
     const t = S.twopt; if (!t) { b.hidden = true; return; }
     const n = (t.phase === 'ov' ? t.ovPts.length : t.basePts.length) + 1 + (t.phase === 'base' ? 2 : 0);
-    const where = t.phase === 'ov' ? `overlay ${label(t.o.pn)}` : `base ${label(S.basePn)}`;
+    const where = t.phase === 'ov' ? `overlay ${label(t.o.pn)}` : `base ${label(S.base)}`;
     const pointNo = t.phase === 'ov' ? t.ovPts.length + 1 : t.basePts.length + 1;
     const lock = el('input', { type: 'checkbox', id: 'lockRot' }); lock.checked = t.lock; lock.addEventListener('change', () => (t.lock = lock.checked));
     b.append(el('span', { class: 'step', text: `STEP ${n}/4` }),
-      el('span', null, 'Click point ', el('b', { text: String(pointNo) }), ` on the ${where}. `, el('span', { style: 'color:var(--muted)', text: 'Snaps to line ends and grid bubbles; hold Alt to place freely.' })),
+      el('span', null, 'Click point ', el('b', { text: String(pointNo) }), ` on the ${where}. `, el('span', { style: 'color:var(--muted)', text: 'Snaps to grid intersections and line ends; hold Alt to place freely.' })),
       el('label', { style: 'display:flex;gap:4px;align-items:center;white-space:nowrap', for: 'lockRot' }, lock, 'Keep rotation 0°'),
       el('button', { class: 'btn', text: 'Cancel', onclick: () => endTwoPt(false) }));
     b.hidden = false;
   }
   function snapAt(sx, sy) {
-    const pn = shownPn(); const c = S.cache[pn]; if (!c || !c.idx) return null;
+    const sh = shown(); const pn = sh && sh.pn; const c = pn && S.cache[pn]; if (!c || !c.idx) return null;
     const p = toPage(sx, sy); const r = 10 / S.view.z; let best = null, bd = r;
     for (const s of c.idx.query(p[0] - r, p[1] - r, p[0] + r, p[1] + r)) {
       for (const e of [0, 2]) { const x = c.idx.S[4 * s + e], y = c.idx.S[4 * s + e + 1]; const d = Math.hypot(x - p[0], y - p[1]); if (d < bd) { bd = d; best = [x, y]; } }
     }
     for (const ci of c.circles || []) { const d = Math.hypot(ci.cx - p[0], ci.cy - p[1]); if (d < bd) { bd = d; best = [ci.cx, ci.cy]; } }
-    // grid line intersections win when they are close: they are the best matching points between sheets
     if (c.grid) for (const cl of c.grid.cols) for (const rw of c.grid.rows) { const d = Math.hypot(cl.pos - p[0], rw.pos - p[1]); if (d < 1.5 * r && d < bd + 0.5 * r) { bd = d; best = [cl.pos, rw.pos]; } }
     return best;
   }
@@ -2360,8 +2655,8 @@ button, input, select { font: inherit; color: inherit; }
       t.ovPts.push(pt);
       if (t.ovPts.length === 2) {
         if (Math.hypot(t.ovPts[1][0] - t.ovPts[0][0], t.ovPts[1][1] - t.ovPts[0][1]) < 5) { t.ovPts.pop(); toast('Pick two points farther apart.'); return; }
-        t.phase = 'base'; S.views['solo'] = Object.assign({}, S.view); S.solo = null;
-        if (S.views[S.basePn]) S.view = Object.assign({}, S.views[S.basePn]); else fit(S.info[S.basePn]);
+        t.phase = 'base'; S.solo = null;
+        if (S.views[S.base]) S.view = Object.assign({}, S.views[S.base]); else fit(sheetInfoSync(S.base));
         afterView(); ensurePreviews();
       }
     } else {
@@ -2376,6 +2671,7 @@ button, input, select { font: inherit; color: inherit; }
         const c = Math.cos(rot), sn = Math.sin(rot);
         const m = (a) => [s * (c * a[0] - sn * a[1]), s * (sn * a[0] + c * a[1])];
         const m1 = m(a1), m2 = m(a2);
+        commit();
         o.s = s; o.rot = rot; o.tx = ((b1[0] - m1[0]) + (b2[0] - m2[0])) / 2; o.ty = ((b1[1] - m1[1]) + (b2[1] - m2[1])) / 2;
         o.status = '2pt'; o.ready = true;
         const resid = Math.max(Math.hypot(b1[0] - m1[0] - o.tx, b1[1] - m1[1] - o.ty), Math.hypot(b2[0] - m2[0] - o.tx, b2[1] - m2[1] - o.ty));
@@ -2389,7 +2685,7 @@ button, input, select { font: inherit; color: inherit; }
   }
   function endTwoPt(ok) {
     const t = S.twopt; if (!t) return;
-    if (S.solo) { S.solo = null; if (S.views[S.basePn]) S.view = Object.assign({}, S.views[S.basePn]); }
+    if (S.solo) { S.solo = null; if (S.views[S.base]) S.view = Object.assign({}, S.views[S.base]); }
     S.twopt = null; $('#banner').hidden = true; setMode('pan', true);
     renderOverlays(); afterView(); ensurePreviews();
     if (!ok) status('Two-point alignment cancelled.');
@@ -2398,17 +2694,28 @@ button, input, select { font: inherit; color: inherit; }
   // ---------------- modes ----------------
   function setMode(m, internal) {
     if (S.twopt && m !== 'twopt' && !internal) endTwoPt(false);
+    if (m !== 'text' && textCtx && !textCtx.existing && S.mode === 'text') closeTextEditor(false);
     S.mode = m; stage.dataset.mode = m;
     document.querySelectorAll('[data-tool]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === m)));
-    if (m === 'crop') status('Drag a box around the part of the overlay to keep. Esc cancels.');
+    if (m === 'crop') status(selOv() && selOv().crop ? 'Drag corners to resize, the round handle to rotate (Shift snaps to 15°), inside to move. Drag outside to draw a new crop.' : 'Drag a box around the part of the overlay to keep. Esc cancels.');
     else if (m === 'move') status('Drag to move the selected overlay, or drag a markup. Arrow keys nudge.');
-    else if (m === 'cloud') status('Drag to draw a revision cloud.');
+    else if (m === 'cloud') status('Drag to draw a revision cloud. Select it afterwards to drag its points.');
     else if (m === 'arrow') status('Drag from the tail to the arrow head.');
-    else if (m === 'text') status('Drag a box, then type. Ctrl+Enter finishes.');
+    else if (m === 'text') status('Tap to place a text box, or drag to size it.');
+    else if (m === 'pan' && !internal) status('Drag to pan. Click a markup to move it or edit its points.');
     drawSvg();
   }
   function endModes() { if (S.twopt) endTwoPt(false); if (S.mode !== 'pan') setMode('pan'); }
   document.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => { if (b.dataset.tool === 'crop' && !selOv()) { toast('Select an overlay in the sidebar first.'); return; } setMode(b.dataset.tool); }));
+
+  // ---------------- current sheet controls ----------------
+  function renderSheetCtl() {
+    const f = S.fade[S.base] || 0;
+    $('#fadeIn').value = String(f); $('#fadeOut').textContent = Math.round(f * 100) + '%';
+    $('#annIn').checked = S.showAnn;
+  }
+  $('#fadeIn').addEventListener('input', (e) => { if (S.base == null) return; commit('fade' + S.base); const v = parseFloat(e.target.value) || 0; if (v) S.fade[S.base] = v; else delete S.fade[S.base]; $('#fadeOut').textContent = Math.round(v * 100) + '%'; draw(); renderListSoon(); });
+  $('#annIn').addEventListener('change', (e) => { S.showAnn = e.target.checked; $('#keepAnn').checked = S.showAnn; ensurePreviews(); draw(); scheduleHiRes(); status(S.showAnn ? 'Showing markups that were already in the PDF.' : 'Hiding markups that were already in the PDF.'); });
 
   // ---------------- sheet list ----------------
   function discipline(num) {
@@ -2417,75 +2724,142 @@ button, input, select { font: inherit; color: inherit; }
     const map = { G: 'General', T: 'General', CS: 'General', C: 'Civil', L: 'Landscape', AS: 'Architectural site', A: 'Architectural', ID: 'Interiors', S: 'Structural', M: 'Mechanical', P: 'Plumbing', E: 'Electrical', FP: 'Fire protection', FA: 'Fire alarm', T24: 'Energy', PV: 'Photovoltaic', LS: 'Life safety', ADA: 'Accessibility', D: 'Demolition', Q: 'Equipment', K: 'Kitchen' };
     return map[p] || map[p[0]] || p;
   }
+  let listTimer = 0;
+  function renderListSoon() { clearTimeout(listTimer); listTimer = setTimeout(renderList, 150); }
   function renderList() {
-    const list = $('#list'); list.textContent = '';
+    const list = $('#list'); const keepScroll = list.scrollTop; list.textContent = '';
     const q = S.filter.trim().toLowerCase();
-    const ovSet = new Set((S.basePn ? curOvs() : []).map(o => o.pn));
-    let lastD = null, shown = 0;
+    const ovSet = new Set((S.base != null ? curOvs() : []).map(o => o.pn));
+    let lastD = null, shownN = 0;
     for (const b of S.sheets) {
-      const hay = ((b.num || '') + ' ' + (b.name || '') + ' page ' + b.pn).toLowerCase();
+      const hay = ((b.num || '') + ' ' + (b.name || '') + ' page ' + (b.src || 'blank')).toLowerCase();
       if (q && !hay.includes(q)) continue;
-      shown++;
-      const d = discipline(b.num);
+      shownN++;
+      const d = b.src ? discipline(b.num) : 'Added sheets';
       if (d !== lastD) { list.append(el('div', { class: 'disc', text: d })); lastD = d; }
-      const isBase = b.pn === S.basePn;
-      const chk = el('input', { type: 'checkbox', 'aria-label': `Overlay ${b.num || 'page ' + b.pn} on the current sheet`, title: isBase ? 'This is the current sheet' : 'Overlay on the current sheet' });
-      chk.checked = ovSet.has(b.pn); chk.disabled = isBase || !S.basePn;
+      const isBase = b.key === S.base;
+      const chk = el('input', { type: 'checkbox', 'aria-label': `Overlay ${label(b.key)} on the current sheet`, title: !b.src ? 'Blank sheets cannot be overlaid' : 'Overlay on the current sheet' });
+      chk.checked = !!b.src && ovSet.has(b.src); chk.disabled = isBase || !b.src || S.base == null;
       chk.addEventListener('click', (e) => e.stopPropagation());
-      chk.addEventListener('change', () => { if (chk.checked) addOverlay(b.pn); else { const o = curOvs().find(o => o.pn === b.pn); if (o) removeOverlay(o.id); } });
-      const n = el('span', { class: 'n', text: b.num || '#' + b.pn, title: 'Page ' + b.pn });
-      const nm = el('span', { class: 'nm' + (b.name ? '' : ' dim'), text: b.name || (b.num ? 'Untitled' : 'Page ' + b.pn), title: (b.name || '') + (b.src && b.src !== 'page' ? `  (from ${b.src === 'index' ? 'sheet index' : b.src === 'outline' ? 'PDF bookmarks' : 'title block'})` : '') });
+      chk.addEventListener('change', () => { if (chk.checked) addOverlay(b.src); else { const ids = curOvs().filter(o => o.pn === b.src).map(o => o.id); if (ids.length) { commit(); S.overlays[S.base] = curOvs().filter(o => o.pn !== b.src); if (ids.includes(S.sel)) S.sel = null; renderOverlays(); renderList(); draw(); } } });
+      const n = el('span', { class: 'n', text: b.num || (b.src ? '#' + b.src : '—'), title: b.src ? 'Page ' + b.src : 'Blank sheet' });
+      const nm = el('span', { class: 'nm' + (b.name ? '' : ' dim'), text: b.name || (b.src ? (b.num ? 'Untitled' : 'Page ' + b.src) : 'Blank sheet'), title: (b.name || '') + (b.from && b.from !== 'page' && b.from !== 'user' ? `  (from ${b.from === 'index' ? 'sheet index' : b.from === 'outline' ? 'PDF bookmarks' : 'title block'})` : '') });
       if (isBase) nm.append(el('span', { class: 'tag', text: 'BASE' }));
-      const row = el('div', { class: 'sh' + (isBase ? ' cur' : ''), 'data-pn': b.pn, tabindex: '0', role: 'button', 'aria-label': `Open ${b.num || 'page ' + b.pn} ${b.name || ''}` }, chk, n, nm);
-      row.addEventListener('click', () => { setBase(b.pn); if (narrow()) setDrawer(false); });
-      row.addEventListener('keydown', (e) => { if (e.key === 'Enter') setBase(b.pn); });
+      if (b.copyOf) nm.append(el('span', { class: 'tagx', text: 'copy' }));
+      // what is already on this sheet
+      const badges = el('span', { class: 'badges' });
+      const nOv = (S.overlays[b.key] || []).length, nMk = (S.markups[b.key] || []).length;
+      if (nOv) badges.append(el('span', { class: 'badge', title: `${nOv} overlay${nOv > 1 ? 's' : ''} on this sheet`, text: `◫ ${nOv}` }));
+      if (nMk) badges.append(el('span', { class: 'badge mk', title: `${nMk} markup${nMk > 1 ? 's' : ''} on this sheet`, text: `✎ ${nMk}` }));
+      if (S.fade[b.key]) badges.append(el('span', { class: 'badge fd', title: 'Faded', text: 'fade' }));
+      const more = el('button', { class: 'more', type: 'button', title: 'Sheet actions', 'aria-label': `Actions for ${label(b.key)}`, text: '⋯' });
+      more.addEventListener('click', (e) => { e.stopPropagation(); openRowMenu(b, more); });
+      const row = el('div', { class: 'sh' + (isBase ? ' cur' : ''), 'data-key': String(b.key), tabindex: '0', role: 'button', 'aria-label': `Open ${label(b.key)} ${b.name || ''}` }, chk, n, nm, badges, more);
+      row.addEventListener('click', () => { setBase(b.key); if (narrow()) setDrawer(false); });
+      row.addEventListener('keydown', (e) => { if (e.key === 'Enter') setBase(b.key); });
       row.addEventListener('dblclick', (e) => { e.preventDefault(); editSheet(row, b); });
       list.append(row);
     }
-    $('#shCount').textContent = S.sheets.length ? (q ? `${shown}/${S.sheets.length}` : String(S.sheets.length)) : '';
+    list.scrollTop = keepScroll;
+    $('#shCount').textContent = S.sheets.length ? (q ? `${shownN}/${S.sheets.length}` : String(S.sheets.length)) : '';
+  }
+  // keep the current sheet visible in the list without scrolling anything else (scrollIntoView
+  // would also scroll the hidden phone drawer into view)
+  function scrollListTo(key) {
+    const list = $('#list'); const row = list.querySelector(`.sh[data-key="${CSS.escape(String(key))}"]`); if (!row) return;
+    const top = row.offsetTop - list.offsetTop, bot = top + row.offsetHeight;
+    if (top < list.scrollTop + 24) list.scrollTop = Math.max(0, top - 30);
+    else if (bot > list.scrollTop + list.clientHeight) list.scrollTop = bot - list.clientHeight + 8;
+    const main = document.querySelector('.main'); if (main) { main.scrollLeft = 0; main.scrollTop = 0; }
   }
   function editSheet(row, b) {
     const inp = el('input', { class: 'edit', value: `${b.num || ''} | ${b.name || ''}`, 'aria-label': 'Sheet number | name' });
     row.children[2].replaceWith(inp); inp.focus(); inp.select();
-    const done = (save) => { if (save) { const [n, ...rest] = inp.value.split('|'); b.num = n.trim().toUpperCase() || null; b.name = rest.join('|').trim() || null; b.userEdited = true; } renderList(); renderHeader(); renderOverlays(); };
-    inp.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') done(true); if (e.key === 'Escape') done(false); });
-    inp.addEventListener('blur', () => done(true));
+    let done = false;
+    const finish = (save) => {
+      if (done) return; done = true;
+      if (save) { const [n, ...rest] = inp.value.split('|'); const num = n.trim().toUpperCase() || null, name = rest.join('|').trim() || null; if (num !== b.num || name !== b.name) { commit(); b.num = num; b.name = name; b.userEdited = true; b.from = 'user'; } }
+      renderList(); renderHeader(); renderOverlays();
+    };
+    inp.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') finish(true); if (e.key === 'Escape') finish(false); });
+    inp.addEventListener('blur', () => finish(true));
     inp.addEventListener('click', (e) => e.stopPropagation());
   }
+  function openRowMenu(b, anchor) {
+    const m = $('#rowMenu'); m.textContent = '';
+    const item = (t, fn, cls) => m.append(el('button', { type: 'button', role: 'menuitem', class: cls || '', text: t, onclick: () => { m.hidden = true; fn(); } }));
+    item('Open', () => setBase(b.key));
+    item('Rename', () => { const row = $('#list').querySelector(`.sh[data-key="${CSS.escape(String(b.key))}"]`); if (row) editSheet(row, b); });
+    item('Duplicate sheet', () => duplicateSheet(b.key));
+    item('Insert blank sheet after', () => insertBlank(b.key));
+    if (b.key !== b.src) item('Delete sheet', () => deleteSheet(b.key), 'danger');
+    m.hidden = false;
+    const r = anchor.getBoundingClientRect();
+    m.style.left = clamp(r.right - m.offsetWidth, 8, innerWidth - m.offsetWidth - 8) + 'px';
+    m.style.top = clamp(r.bottom + 4, 8, innerHeight - m.offsetHeight - 8) + 'px';
+    m.querySelector('button').focus();
+  }
+  document.addEventListener('pointerdown', (e) => { const m = $('#rowMenu'); if (!m.hidden && !m.contains(e.target)) m.hidden = true; });
+  $('#rowMenu').addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); $('#rowMenu').hidden = true; } });
+
+  function duplicateSheet(key) {
+    const b = sheetBy(key); if (!b) return;
+    commit();
+    const nk = uid('d'); const copy = Object.assign(clone(b), { key: nk, copyOf: b.key, userEdited: true, from: 'user' });
+    copy.name = (b.name || label(key)) + ' (copy)';
+    S.sheets.splice(idxOf(key) + 1, 0, copy); reindex();
+    if (S.overlays[key]) S.overlays[nk] = clone(S.overlays[key]).map(o => Object.assign(o, { id: uid('o'), baseKey: nk }));
+    if (S.markups[key]) S.markups[nk] = clone(S.markups[key]).map(m => Object.assign(m, { id: uid('m') }));
+    if (S.fade[key]) S.fade[nk] = S.fade[key];
+    setBase(nk); toast(`Duplicated ${label(key)}.`);
+  }
+  async function insertBlank(key) {
+    const inf = await sheetInfo(key); if (!inf) return;
+    commit();
+    const nk = uid('b'); const sheet = { key: nk, src: null, W: inf.W, H: inf.H, num: null, name: 'Blank sheet', userEdited: true, from: 'user' };
+    S.sheets.splice(idxOf(key) + 1, 0, sheet); reindex();
+    setBase(nk); toast(`Inserted a blank ${Math.round(inf.W / 72)}×${Math.round(inf.H / 72)} in sheet.`);
+  }
+  function deleteSheet(key) {
+    const i = idxOf(key); const b = sheetBy(key); if (i < 0 || b.key === b.src) return;
+    commit();
+    S.sheets.splice(i, 1); reindex(); delete S.overlays[key]; delete S.markups[key]; delete S.fade[key];
+    if (S.base === key) setBase((S.sheets[i - 1] || S.sheets[0]).key); else renderList();
+    toast('Sheet deleted. Undo brings it back.');
+  }
+  $('#dupBtn').addEventListener('click', () => { if (S.base != null) duplicateSheet(S.base); });
+  $('#blankBtn').addEventListener('click', () => { if (S.base != null) insertBlank(S.base); });
   $('#search').addEventListener('input', (e) => { S.filter = e.target.value; renderList(); });
   $('#search').addEventListener('keydown', (e) => e.stopPropagation());
   function renderHeader() {
-    if (!S.basePn) return;
-    const b = sheet(S.basePn);
-    $('#curNo').textContent = b.num || '#' + S.basePn;
+    if (S.base == null) return;
+    const b = sheetBy(S.base); if (!b) return;
+    $('#curNo').textContent = b.num || (b.src ? '#' + b.src : 'Blank');
     $('#curName').textContent = b.name || (S.file ? S.file.name : '');
     $('#curName').title = b.name || '';
   }
 
   // ---------------- export ----------------
-  // ---------------- export ----------------
   const safeName = (n) => n.replace(/[\\/:*?"<>|]/g, '-').replace(/\s+/g, ' ').trim();
   const fileBase = () => (S.file ? S.file.name.replace(/\.pdf$/i, '') : 'Sheets');
-  function markedPns() {
-    const out = [];
-    for (const b of S.sheets) {
-      const ovs = (S.overlays[b.pn] || []).filter(o => o.visible && o.ready), mks = S.markups[b.pn] || [];
-      if (ovs.length || mks.length) out.push(b.pn);
-    }
-    return out;
+  const added = () => S.sheets.some(b => b.key !== b.src);
+  function markedKeys() {
+    return S.sheets.filter(b => (S.overlays[b.key] || []).some(o => o.visible && o.ready) || (S.markups[b.key] || []).length || S.fade[b.key] || b.key !== b.src).map(b => b.key);
   }
   let pickSet = new Set();
   function openExport() {
     if (!S.doc) return;
-    const marked = markedPns();
-    $('#scCurNm').textContent = fullLabel(S.basePn);
+    const marked = markedKeys();
+    $('#scCurNm').textContent = fullLabel(S.base);
     $('#scMarkedCt').textContent = String(marked.length);
     $('#scAllCt').textContent = String(S.sheets.length);
-    if (!pickSet.size) pickSet = new Set(marked.length ? marked : [S.basePn]);
+    pickSet = new Set([...pickSet].filter(k => sheetBy(k)));
+    if (!pickSet.size) pickSet = new Set(marked.length ? marked : [S.base]);
     $('#scPickCt').textContent = String(pickSet.size);
-    const curHas = marked.includes(S.basePn);
+    const curHas = marked.includes(S.base);
     (marked.length > 1 ? $('#scMarked') : curHas || !marked.length ? $('#scCur') : $('#scMarked')).checked = true;
-    $('#expMsg').textContent = '';
+    $('#keepAnn').checked = S.showAnn;
+    $('#expMsg').textContent = added() ? 'Duplicated and blank sheets are included in the full set and in sheets you worked on.' : '';
     renderPick(); syncPick();
     $('#expModal').hidden = false; $('#expGo').disabled = false; $('#expGo').focus();
   }
@@ -2493,19 +2867,19 @@ button, input, select { font: inherit; color: inherit; }
   function renderPick() {
     const box = $('#pickList'); box.textContent = '';
     const q = ($('#pickFilter').value || '').toLowerCase();
-    const marked = new Set(markedPns());
+    const marked = new Set(markedKeys());
     for (const b of S.sheets) {
-      const hay = ((b.num || '') + ' ' + (b.name || '') + ' page ' + b.pn).toLowerCase();
+      const hay = ((b.num || '') + ' ' + (b.name || '') + ' page ' + (b.src || 'blank')).toLowerCase();
       if (q && !hay.includes(q)) continue;
-      const cb = el('input', { type: 'checkbox' }); cb.checked = pickSet.has(b.pn);
-      cb.addEventListener('change', () => { if (cb.checked) pickSet.add(b.pn); else pickSet.delete(b.pn); $('#scPickCt').textContent = String(pickSet.size); $('#scPick').checked = true; syncPick(); });
-      box.append(el('label', null, cb, el('b', { text: b.num || '#' + b.pn }), el('span', { text: (b.name || 'Page ' + b.pn) + (marked.has(b.pn) ? '  ●' : '') })));
+      const cb = el('input', { type: 'checkbox' }); cb.checked = pickSet.has(b.key);
+      cb.addEventListener('change', () => { if (cb.checked) pickSet.add(b.key); else pickSet.delete(b.key); $('#scPickCt').textContent = String(pickSet.size); $('#scPick').checked = true; syncPick(); });
+      box.append(el('label', null, cb, el('b', { text: label(b.key) }), el('span', { text: (b.name || '') + (marked.has(b.key) ? '  ●' : '') })));
     }
   }
   document.querySelectorAll('input[name="scope"]').forEach(r => r.addEventListener('change', syncPick));
   $('#pickFilter').addEventListener('input', renderPick);
   $('#pickFilter').addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') e.preventDefault(); });
-  $('#pickAll').addEventListener('click', () => { const q = ($('#pickFilter').value || '').toLowerCase(); for (const b of S.sheets) { const hay = ((b.num || '') + ' ' + (b.name || '') + ' page ' + b.pn).toLowerCase(); if (!q || hay.includes(q)) pickSet.add(b.pn); } $('#scPickCt').textContent = String(pickSet.size); renderPick(); });
+  $('#pickAll').addEventListener('click', () => { const q = ($('#pickFilter').value || '').toLowerCase(); for (const b of S.sheets) { const hay = ((b.num || '') + ' ' + (b.name || '') + ' page ' + (b.src || 'blank')).toLowerCase(); if (!q || hay.includes(q)) pickSet.add(b.key); } $('#scPickCt').textContent = String(pickSet.size); renderPick(); });
   $('#pickNone').addEventListener('click', () => { pickSet.clear(); $('#scPickCt').textContent = '0'; renderPick(); });
   $('#expCancel').addEventListener('click', () => { if (!S.exporting) $('#expModal').hidden = true; });
   $('#expModal').addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Escape' && !S.exporting) $('#expModal').hidden = true; });
@@ -2513,23 +2887,24 @@ button, input, select { font: inherit; color: inherit; }
     e.preventDefault(); if (S.exporting) return;
     const scope = (document.querySelector('input[name="scope"]:checked') || {}).value || 'current';
     const separate = (document.querySelector('input[name="files"]:checked') || {}).value === 'separate';
-    let pns = scope === 'current' ? [S.basePn] : scope === 'marked' ? markedPns() : scope === 'all' ? S.sheets.map(b => b.pn) : [...pickSet].sort((a, b) => a - b);
-    if (!pns.length) { $('#expMsg').textContent = scope === 'marked' ? 'No sheet has an overlay or markup yet.' : 'Choose at least one sheet.'; return; }
+    const order = new Map(S.sheets.map((b, i) => [b.key, i]));
+    const keys = scope === 'current' ? [S.base] : scope === 'marked' ? markedKeys() : scope === 'all' ? S.sheets.map(b => b.key) : [...pickSet].filter(k => order.has(k)).sort((a, b) => order.get(a) - order.get(b));
+    if (!keys.length) { $('#expMsg').textContent = scope === 'marked' ? 'No sheet has an overlay or markup yet.' : 'Choose at least one sheet.'; return; }
     S.exporting = true; $('#expGo').disabled = true;
-    try { await runExport(pns, separate, scope); $('#expModal').hidden = true; }
+    try { await runExport(keys, separate, scope, $('#keepAnn').checked); $('#expModal').hidden = true; }
     catch (err) { console.error(err); $('#expMsg').textContent = 'Export failed: ' + (err && err.message || err); }
     S.exporting = false; $('#expGo').disabled = false;
   });
 
-  async function sheetSpec(pn) {
-    const bi = await pageInfo(pn);
+  async function sheetSpec(key) {
+    const b = sheetBy(key); const bi = await sheetInfo(key);
     const overlays = [];
-    for (const o of (S.overlays[pn] || []).filter(o => o.visible && o.ready)) {
+    for (const o of (S.overlays[key] || []).filter(o => o.visible && o.ready)) {
       const oi = await pageInfo(o.pn);
-      overlays.push({ pn: o.pn, view: oi.view, rotate: oi.rotate, s: o.s, rot: o.rot, tx: o.tx, ty: o.ty, crop: o.crop, color: hex2rgb(o.color), opacity: o.opacity, name: fullLabel(o.pn) });
+      overlays.push({ pn: o.pn, view: oi.view, rotate: oi.rotate, s: o.s, rot: o.rot, tx: o.tx, ty: o.ty, cropPoly: cropPoly(o.crop), color: hex2rgb(o.color), opacity: o.opacity, name: fullLabel(o.pn) });
     }
-    const markups = (S.markups[pn] || []).map(m => Object.assign({}, m, { color: hex2rgb(REDLINE) }));
-    return { pn, view: bi.view, rotate: bi.rotate, name: label(pn), title: fullLabel(pn), overlays, markups };
+    const markups = (S.markups[key] || []).map(m => Object.assign(clone(m), { color: hex2rgb(REDLINE) }));
+    return { pn: b.src || null, view: bi.view, rotate: bi.rotate, name: label(key), title: fullLabel(key), overlays, markups, fade: S.fade[key] || 0 };
   }
   async function libDoc(fresh) {
     if (fresh || !S.libDoc || S.libDocFor !== S.file) {
@@ -2540,29 +2915,30 @@ button, input, select { font: inherit; color: inherit; }
     }
     return S.libDoc;
   }
-  async function build(sheets, onProgress) {
-    try { return await E.buildPDF(PDFLib, await libDoc(false), sheets, { author: AUTHOR, onProgress }); }
-    catch (e) { console.warn('Export failed once, retrying with a fresh copy of the set', e); return await E.buildPDF(PDFLib, await libDoc(true), sheets, { author: AUTHOR, onProgress }); }
+  async function build(sheets, keepExisting, onProgress) {
+    const opts = { author: AUTHOR, onProgress, keepExisting };
+    try { return await E.buildPDF(PDFLib, await libDoc(false), sheets, opts); }
+    catch (e) { console.warn('Export failed once, retrying with a fresh copy of the set', e); return await E.buildPDF(PDFLib, await libDoc(true), sheets, opts); }
   }
-  async function runExport(pns, separate, scope) {
+  async function runExport(keys, separate, scope, keepExisting) {
     const msg = (t) => { $('#expMsg').textContent = t; };
     busy(true, 'Building PDF');
     try {
       const sheets = [];
-      for (const pn of pns) sheets.push(await sheetSpec(pn));
+      for (const k of keys) sheets.push(await sheetSpec(k));
       const tick = () => new Promise(r => setTimeout(r, 0));
       if (!separate) {
-        const bytes = await build(sheets, async (i, n) => { if (n > 1) { msg(`Building sheet ${i} of ${n}`); await tick(); } });
+        const bytes = await build(sheets, keepExisting, async (i, n) => { if (n > 1) { msg(`Building sheet ${i} of ${n}`); await tick(); } });
         msg('Saving');
         let name;
-        if (pns.length === 1) { const o = sheets[0].overlays; name = `${sheets[0].name}${o.length ? ' + ' + o.map(x => label(x.pn)).join(' + ') : ''} overlay.pdf`; }
-        else name = `${fileBase()} - ${scope === 'all' ? 'full set' : scope === 'marked' ? 'overlays' : pns.length + ' sheets'}.pdf`;
+        if (keys.length === 1) { const o = sheets[0].overlays; name = `${sheets[0].name}${o.length ? ' + ' + [...new Set(o.map(x => label(x.pn)))].join(' + ') : ''} overlay.pdf`; }
+        else name = `${fileBase()} - ${scope === 'all' ? 'full set' : scope === 'marked' ? 'overlays' : keys.length + ' sheets'}.pdf`;
         await saveFile(safeName(name), bytes, 'application/pdf');
       } else {
         const files = []; const used = new Set();
         for (let i = 0; i < sheets.length; i++) {
           msg(`Building sheet ${i + 1} of ${sheets.length}`); await tick();
-          const bytes = await build([sheets[i]]);
+          const bytes = await build([sheets[i]], keepExisting);
           let nm = safeName(`${sheets[i].title}.pdf`); let k = 2; while (used.has(nm)) nm = safeName(`${sheets[i].title} (${k++}).pdf`); used.add(nm);
           files.push({ name: nm, bytes });
         }
@@ -2587,20 +2963,26 @@ button, input, select { font: inherit; color: inherit; }
 
   // ---------------- keyboard ----------------
   document.addEventListener('keydown', (e) => {
-    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') { e.preventDefault(); $('#fileIn').click(); return; }
-    if (!S.basePn) return;
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) return;
+    const mod = e.ctrlKey || e.metaKey;
+    if (mod && e.key.toLowerCase() === 'o') { e.preventDefault(); $('#fileIn').click(); return; }
+    if (S.base == null) return;
+    if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
+    if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
     if (e.key === ' ') { spaceDown = true; e.preventDefault(); return; }
     const r = stage.getBoundingClientRect();
     const o = selOv();
     const step = e.shiftKey ? 10 : e.altKey ? 0.1 : 1;
+    const m = selMk();
+    const moveMk = (dx, dy) => { commit('mk' + m.id); if (m.type === 'text') m.box = [m.box[0] + dx, m.box[1] + dy, m.box[2] + dx, m.box[3] + dy]; else m.points = m.points.map(p => [p[0] + dx, p[1] + dy]); drawSvg(); };
     switch (e.key) {
-      case 'Escape': if (S.twopt) endTwoPt(false); else if (S.mode !== 'pan') setMode('pan'); else if (S.selMk) { S.selMk = null; renderMarkupList(); draw(); } break;
-      case 'ArrowLeft': if (o) { e.preventDefault(); nudge(o, -step, 0); } break;
-      case 'ArrowRight': if (o) { e.preventDefault(); nudge(o, step, 0); } break;
-      case 'ArrowUp': if (o) { e.preventDefault(); nudge(o, 0, -step); } break;
-      case 'ArrowDown': if (o) { e.preventDefault(); nudge(o, 0, step); } break;
+      case 'Escape': if (S.twopt) endTwoPt(false); else if (S.mode !== 'pan') setMode('pan'); else if (S.selMk) { S.selMk = null; renderMarkupList(); drawSvg(); } break;
+      case 'ArrowLeft': if (m) { e.preventDefault(); moveMk(-step, 0); } else if (o) { e.preventDefault(); nudge(o, -step, 0); } break;
+      case 'ArrowRight': if (m) { e.preventDefault(); moveMk(step, 0); } else if (o) { e.preventDefault(); nudge(o, step, 0); } break;
+      case 'ArrowUp': if (m) { e.preventDefault(); moveMk(0, -step); } else if (o) { e.preventDefault(); nudge(o, 0, -step); } break;
+      case 'ArrowDown': if (m) { e.preventDefault(); moveMk(0, step); } else if (o) { e.preventDefault(); nudge(o, 0, step); } break;
       case 'Delete': case 'Backspace': if (S.selMk) { e.preventDefault(); removeMarkup(S.selMk); } break;
+      case 'Enter': if (m && m.type === 'text') { e.preventDefault(); openTextEditor(m); } break;
       case '+': case '=': zoomAt(1.25, r.width / 2, r.height / 2); break;
       case '-': case '_': zoomAt(0.8, r.width / 2, r.height / 2); break;
       case 'f': case 'F': case '0': fit(); break;
@@ -2610,8 +2992,8 @@ button, input, select { font: inherit; color: inherit; }
       case 'k': case 'K': setMode('cloud'); break;
       case 'a': case 'A': setMode('arrow'); break;
       case 't': case 'T': setMode('text'); break;
-      case 'PageDown': e.preventDefault(); setBase(S.basePn + 1); break;
-      case 'PageUp': e.preventDefault(); setBase(S.basePn - 1); break;
+      case 'PageDown': e.preventDefault(); stepSheet(1); break;
+      case 'PageUp': e.preventDefault(); stepSheet(-1); break;
     }
   });
   document.addEventListener('keyup', (e) => { if (e.key === ' ') spaceDown = false; });
@@ -2626,8 +3008,10 @@ button, input, select { font: inherit; color: inherit; }
   $('#openBtn').addEventListener('click', () => $('#fileIn').click());
   $('#openBtn2').addEventListener('click', () => $('#fileIn').click());
   $('#fileIn').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; openFile(f); });
-  $('#prevBtn').addEventListener('click', () => setBase(S.basePn - 1));
-  $('#nextBtn').addEventListener('click', () => setBase(S.basePn + 1));
+  $('#prevBtn').addEventListener('click', () => stepSheet(-1));
+  $('#nextBtn').addEventListener('click', () => stepSheet(1));
+  $('#undoBtn').addEventListener('click', undo);
+  $('#redoBtn').addEventListener('click', redo);
   $('#zoomIn').addEventListener('click', () => { const r = stage.getBoundingClientRect(); zoomAt(1.25, r.width / 2, r.height / 2); });
   $('#zoomOut').addEventListener('click', () => { const r = stage.getBoundingClientRect(); zoomAt(0.8, r.width / 2, r.height / 2); });
   $('#zoomFit').addEventListener('click', () => fit());
@@ -2639,16 +3023,10 @@ button, input, select { font: inherit; color: inherit; }
   new ResizeObserver(resize).observe(stage);
   if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', draw);
   new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  resize();
+  resize(); syncHist();
 
   // test hooks
-  window.__overlayApp = { openFile, setBase, addOverlay, runExport, openExport, S, fit, setMode, applyCrop, buildExportBytes: async () => {
-    const bytes = new Uint8Array(await S.file.arrayBuffer());
-    const src = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
-    const bi = await pageInfo(S.basePn); const overlays = [];
-    for (const o of curOvs().filter(o => o.visible && o.ready)) { const oi = await pageInfo(o.pn); overlays.push({ pn: o.pn, view: oi.view, rotate: oi.rotate, s: o.s, rot: o.rot, tx: o.tx, ty: o.ty, crop: o.crop, color: hex2rgb(o.color), opacity: o.opacity, name: fullLabel(o.pn) }); }
-    return E.exportPDF(PDFLib, { srcDoc: src, basePn: S.basePn, baseView: bi.view, baseRotate: bi.rotate, overlays, baseName: label(S.basePn), author: AUTHOR, markups: curMks().map(m => Object.assign({}, m, { color: hex2rgb(REDLINE) })) });
-  } };
+  window.__overlayApp = { openFile, setBase, addOverlay, runExport, openExport, S, fit, setMode, applyCrop, undo, redo, duplicateSheet, insertBlank, deleteSheet, openTextEditor, closeTextEditor, cropPoly, toScreen, sheetSpec, buildExportBytes: async () => { const sp = await sheetSpec(S.base); return E.buildPDF(PDFLib, await libDoc(false), [sp], { author: AUTHOR, keepExisting: S.showAnn }); } };
 })();
 
 </script>
